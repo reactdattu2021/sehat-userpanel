@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
@@ -12,19 +12,97 @@ import {
   ReviewsData,
   CountData,
   faqData,
-  Equipments,
 } from "../../utils/Data";
+import { getAllEquipmentsApi } from "../../apis/authapis";
 import { MdKeyboardArrowLeft } from "react-icons/md";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { TiStarFullOutline } from "react-icons/ti";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
   const slidesPerView = 3;
 
+  // Home page search states
+  const [serviceQuery, setServiceQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
+
+  // Equipment data states
+  const [equipments, setEquipments] = useState([]);
+  const [loadingEquipments, setLoadingEquipments] = useState(true);
+  const [equipmentError, setEquipmentError] = useState(null);
+
   const lastIndex = TopHealthServices.length - slidesPerView;
   const lastIndexReview = ReviewsData.length - slidesPerView;
+
+  // Handle home page search - Navigate to BookNurse with filter parameters
+  const handleHomeSearch = () => {
+    const trimmedService = serviceQuery.trim();
+    const trimmedLocation = locationQuery.trim();
+
+    // Need at least service query or location to search
+    if (!trimmedService && !trimmedLocation) {
+      return;
+    }
+
+    // Build URL parameters for BookNurse page filters
+    const params = new URLSearchParams();
+
+    // Add service as search filter if provided (searches across serviceName, description, category, subCategory)
+    if (trimmedService) {
+      params.append("search", trimmedService);
+    }
+
+    // Add location as city filter if provided
+    if (trimmedLocation) {
+      params.append("location", trimmedLocation);
+    }
+
+    // Navigate to BookNurse page with filter parameters
+    navigate(`/book-nurse?${params.toString()}`);
+
+    // Clear input fields
+    setServiceQuery("");
+    setLocationQuery("");
+  };
+
+  // Handle Enter key press in search inputs
+  const handleSearchKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleHomeSearch();
+    }
+  };
+
+  // Fetch equipment data on component mount
+  useEffect(() => {
+    const fetchEquipments = async () => {
+      try {
+        setLoadingEquipments(true);
+        setEquipmentError(null);
+        const response = await getAllEquipmentsApi(1, 5); // Fetch 5 items for home page
+
+        if (response.data && response.data.data) {
+          setEquipments(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching equipments:", error);
+
+        // Handle 401 errors gracefully - don't show error, just hide the section
+        if (error.response?.status === 401) {
+          console.log("⚠️ Equipment endpoint requires authentication - hiding section");
+          setEquipments([]); // Set empty array to hide the section
+          setEquipmentError(null); // Don't show error message
+        } else {
+          setEquipmentError("Failed to load equipments");
+        }
+      } finally {
+        setLoadingEquipments(false);
+      }
+    };
+
+    fetchEquipments();
+  }, []);
 
   return (
     <div className="space-y-[60px] md:space-y-[80px] xl:space-y-[120px]">
@@ -56,10 +134,16 @@ const Home = () => {
                     professionals and clinics nearby.
                   </p>
                   <div className="flex gap-3">
-                    <button className="bg-[#34658C] px-6 py-2 md:py-3 rounded-[12px] text-white text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.4px] font-semibold  font-outfit">
+                    <button
+                      onClick={() => navigate("/equipments")}
+                      className="bg-[#34658C] px-6 py-2 md:py-3 rounded-[12px] text-white text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.4px] font-semibold  font-outfit"
+                    >
                       Rent Equipment
                     </button>
-                    <button className="bg-[#A2CD48] px-6 py-2 md:py-3 rounded-[12px] text-white text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.4px] font-semibold  font-outfit">
+                    <button
+                      onClick={() => navigate("/book-nurse")}
+                      className="bg-[#A2CD48] px-6 py-2 md:py-3 rounded-[12px] text-white text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.4px] font-semibold  font-outfit"
+                    >
                       Book a Nurse
                     </button>
                   </div>
@@ -104,7 +188,10 @@ const Home = () => {
                   <input
                     type="text"
                     placeholder="Search Service"
-                    className="bg-transparent text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] placeholder:text-[#333333] font-semibold"
+                    className="bg-transparent text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] placeholder:text-[#333333] font-semibold outline-none w-full"
+                    value={serviceQuery}
+                    onChange={(e) => setServiceQuery(e.target.value)}
+                    onKeyPress={handleSearchKeyPress}
                   />
                 </div>
               </div>
@@ -131,13 +218,19 @@ const Home = () => {
                   <input
                     type="text"
                     placeholder="Search Location "
-                    className="bg-transparent text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] placeholder:text-[#333333]  font-semibold"
+                    className="bg-transparent text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] placeholder:text-[#333333]  font-semibold outline-none w-full"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    onKeyPress={handleSearchKeyPress}
                   />
                 </div>
               </div>
             </div>
             <div className="col-span-12 md:col-span-2 flex justify-start md:justify-center md:items-end h-full">
-              <button className="bg-[#A2CD48] px-8 py-2  md:py-3 rounded-[12px] text-white text-[16px] font-semibold tracking-[0.4px] font-outfit">
+              <button
+                onClick={handleHomeSearch}
+                className="bg-[#A2CD48] px-8 py-2  md:py-3 rounded-[12px] text-white text-[16px] font-semibold tracking-[0.4px] font-outfit hover:bg-[#8fb83d] transition-colors"
+              >
                 Search
               </button>
             </div>
@@ -195,52 +288,115 @@ const Home = () => {
               },
             }}
           >
-            {Equipments.map((data, index) => (
-              <SwiperSlide key={index} className="p-1 ">
+            {loadingEquipments ? (
+              // Loading state
+              <SwiperSlide className="p-1">
                 <div
-                  key={index}
-                  className="p-4 rounded-[16px]"
+                  className="p-4 rounded-[16px] flex items-center justify-center h-[250px]"
                   style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 ">
-                    <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
-                      <img
-                        src={data.image}
-                        className="rounded-[12px] w-[200px] h-[200px] object-cover "
-                      />
-                    </div>
-                    <div className="col-span-12 md:col-span-7">
-                      <div className="flex flex-col justify-center h-full gap-[6px]">
-                        <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
-                          {data.name}
-                        </h1>
-                        <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
-                          {data.description}
-                        </p>
-                        <div>
-                          <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
-                            RentalPrice:{" "}
-                            <span className="text-[16px] leading-[26px] tracking-[0.64px] font-semibold ">
-                              {data.price}
-                            </span>
-                          </p>
-                          <div className="flex gap-2 mt-[6px]">
-                            <button className="bg-[#34658C] text-white  px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
-                              Add To Cart
-                            </button>
-                            <Link to="/equipment-detail">
-                              <button className="bg-[#A2CD48] text-white  px-4 md:px-8  py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
-                                Rent Now
-                              </button>
-                            </Link>
+                  <p className="text-[16px] text-[#34658C] font-semibold">
+                    Loading equipments...
+                  </p>
+                </div>
+              </SwiperSlide>
+            ) : equipmentError ? (
+              // Error state
+              <SwiperSlide className="p-1">
+                <div
+                  className="p-4 rounded-[16px] flex items-center justify-center h-[250px]"
+                  style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                >
+                  <p className="text-[16px] text-red-500 font-semibold">
+                    {equipmentError}
+                  </p>
+                </div>
+              </SwiperSlide>
+            ) : equipments.length === 0 ? (
+              // No data state
+              <SwiperSlide className="p-1">
+                <div
+                  className="p-4 rounded-[16px] flex items-center justify-center h-[250px]"
+                  style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                >
+                  <p className="text-[16px] text-[#34658C] font-semibold">
+                    No equipments available
+                  </p>
+                </div>
+              </SwiperSlide>
+            ) : (
+              // Data loaded successfully
+              equipments.map((data, index) => {
+                // Extract pricing information
+                const getPriceDisplay = () => {
+                  if (data.pricings) {
+                    const prices = [];
+                    if (data.pricings.perDay)
+                      prices.push(`₹${data.pricings.perDay}/day`);
+                    if (data.pricings.perWeek)
+                      prices.push(`₹${data.pricings.perWeek}/week`);
+                    if (data.pricings.perMonth)
+                      prices.push(`₹${data.pricings.perMonth}/month`);
+                    return prices.join(" | ") || "Price on request";
+                  }
+                  return "Price on request";
+                };
+
+                return (
+                  <SwiperSlide key={data._id || index} className="p-1">
+                    <div
+                      className="p-4 rounded-[16px]"
+                      style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
+                          <img
+                            src={
+                              data.profileImage ||
+                              data.images?.[0] ||
+                              "/assets/EquipmentImages/default-equipment.png"
+                            }
+                            alt={data.equipmentName}
+                            className="rounded-[12px] w-[200px] h-[200px] object-cover"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-7">
+                          <div className="flex flex-col justify-center h-full gap-[6px]">
+                            <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
+                              {data.equipmentName}
+                            </h1>
+                            <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold line-clamp-2">
+                              {data.advantages}
+                            </p>
+                            <div>
+                              <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
+                                Rental Price:{" "}
+                                <span className="text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
+                                  {getPriceDisplay()}
+                                </span>
+                              </p>
+                              <div className="flex gap-2 mt-[6px]">
+                                <button
+                                  className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                  onClick={() => navigate('/cart')}
+                                >
+                                  Add To Cart
+                                </button>
+                                <Link to={`/equipment/${data._id}`}>
+                                  <button className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
+                                    Rent Now
+                                  </button>
+                                </Link>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </SwiperSlide>
-            ))}
+                  </SwiperSlide>
+                );
+              })
+            )}
           </Swiper>
         </div>
       </div>
@@ -258,7 +414,10 @@ const Home = () => {
                 connects you with trained and verified nurses who bring
                 professional healthcare right to your doorstep.
               </p>
-              <button className="bg-[#A2CD48] text-white px-8 py-3 text-[16px] tracking-[0.96px] font-semibold rounded-[12px] font-outfit">
+              <button
+                onClick={() => navigate("/book-nurse")}
+                className="bg-[#A2CD48] text-white px-8 py-3 text-[16px] tracking-[0.96px] font-semibold rounded-[12px] font-outfit"
+              >
                 Book a Nurse{" "}
               </button>
             </div>

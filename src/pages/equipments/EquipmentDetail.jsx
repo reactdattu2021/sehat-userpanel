@@ -111,7 +111,12 @@ const EquipmentDetail = () => {
                 />
               ))}
             </div>
-            <button className="bg-[#34658C] text-white px-[64px] py-4 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] font-semibold w-full md:w-fit font-outfit">Add To Cart</button>
+            <button
+              className="bg-[#34658C] text-white px-[64px] py-4 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] font-semibold w-full md:w-fit font-outfit"
+              onClick={() => navigate('/cart')}
+            >
+              Add To Cart
+            </button>
           </div>
           <div className="col-span-12 lg:col-span-7">
             <div className="flex flex-col gap-2 md:gap-4 xl:gap-6">

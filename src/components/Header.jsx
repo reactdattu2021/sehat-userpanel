@@ -7,11 +7,14 @@ import { HiUser } from "react-icons/hi2";
 import Login from "../pages/authentication/Login";
 import Signup from "../pages/authentication/Signup";
 import { useAuth } from "../context/AuthContext";
+import { globalSearchApi } from "../apis/authapis";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -22,6 +25,57 @@ const Header = () => {
 
   const handleProfileClick = () => {
     navigate('/myaccount');
+  };
+
+  const handleSearch = async () => {
+    const trimmedQuery = searchQuery.trim();
+
+    if (!trimmedQuery) {
+      return; // Don't search if empty
+    }
+
+    try {
+      setIsSearching(true);
+
+      // Call global search API to determine result type
+      const response = await globalSearchApi(trimmedQuery, 1, 10);
+
+      if (response.data.success && response.data.data.length > 0) {
+        // Get the first result's type
+        const firstResult = response.data.data[0];
+        const resultType = firstResult.resultType;
+
+        // Route based on result type
+        if (resultType === 'service') {
+          navigate(`/book-nurse?search=${encodeURIComponent(trimmedQuery)}`);
+        } else if (resultType === 'equipment') {
+          navigate(`/equipments?search=${encodeURIComponent(trimmedQuery)}`);
+        } else {
+          // Fallback to equipment page if resultType is unknown
+          navigate(`/equipments?search=${encodeURIComponent(trimmedQuery)}`);
+        }
+
+        setSearchQuery(""); // Clear search after navigation
+      } else {
+        // No results found - default to equipment page
+        console.log('No results found, defaulting to equipment page');
+        navigate(`/equipments?search=${encodeURIComponent(trimmedQuery)}`);
+        setSearchQuery("");
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      // On error, fallback to equipment page
+      navigate(`/equipments?search=${encodeURIComponent(trimmedQuery)}`);
+      setSearchQuery("");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter' && !isSearching) {
+      handleSearch();
+    }
   };
 
   const navLinks = [
@@ -132,7 +186,13 @@ const Header = () => {
                         </div>
                       )}
 
-                      <div className="bg-[#A2CD48] px-6 py-2 rounded-[12px] flex gap-2 items-center">
+                      <div
+                        className="bg-[#A2CD48] px-6 py-2 rounded-[12px] flex gap-2 items-center cursor-pointer hover:bg-[#8fb83d] transition-colors"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          navigate('/cart');
+                        }}
+                      >
                         <img
                           src="/assets/headerImages/cart.png"
                           alt="cart"
@@ -176,15 +236,24 @@ const Header = () => {
             {/* search icon  */}
             <div className="flex justify-between border-[1px] border-[#2E86C1] rounded-[12px] px-4 py-3  w-full xl:w-[384px]">
               <input
-                className="text-[#333333] text-[16px]"
-                placeholder="Search for the services"
+                className="text-[#333333] text-[16px] outline-none flex-1"
+                placeholder={isSearching ? "Searching..." : "Search for the services"}
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
+                disabled={isSearching}
               />
-              <img
-                src="/assets/headerImages/search-icon.png"
-                alt="search icon"
-                className="w-[20px] h-[20px]"
-              />
+              {isSearching ? (
+                <div className="w-[20px] h-[20px] border-2 border-[#2E86C1] border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <img
+                  src="/assets/headerImages/search-icon.png"
+                  alt="search icon"
+                  className="w-[20px] h-[20px] cursor-pointer"
+                  onClick={handleSearch}
+                />
+              )}
             </div>
           </div>
 
@@ -223,7 +292,10 @@ const Header = () => {
             )}
 
             {/* Cart Button */}
-            <div className=" bg-[#A2CD48] px-6 py-2 rounded-[12px] flex gap-2 items-center cursor-pointer hover:bg-[#8fb83d] transition-colors">
+            <div
+              className=" bg-[#A2CD48] px-6 py-2 rounded-[12px] flex gap-2 items-center cursor-pointer hover:bg-[#8fb83d] transition-colors"
+              onClick={() => navigate('/cart')}
+            >
               <img
                 src="/assets/headerImages/cart.png"
                 alt="cart"

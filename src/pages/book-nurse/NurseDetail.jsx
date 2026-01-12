@@ -18,18 +18,18 @@ const NurseDetail = () => {
   const [selectedImg, setSelectedImg] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [days, setDays] = useState(1);
-  const [rentalType, setRentalType] = useState('perHour');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [visitTime, setVisitTime] = useState('morning');
+  const [rentalType, setRentalType] = useState("perHour");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [visitTime, setVisitTime] = useState("morning");
 
   // Fetch nurse details
   useEffect(() => {
     const fetchNurseDetails = async () => {
       try {
         setLoading(true);
-        console.log('Fetching nurse with ID:', nurseId);
+        console.log("Fetching nurse with ID:", nurseId);
         const response = await getNurseByIdApi(nurseId);
-        console.log('API Response:', response.data);
+        console.log("API Response:", response.data);
 
         if (response.data.success) {
           // API returns data.service and data.pricings separately
@@ -39,15 +39,18 @@ const NurseDetail = () => {
           // Combine service and pricings data
           const nurseData = {
             ...serviceData,
-            pricings: pricingsData
+            pricings: pricingsData,
           };
 
           setNurse(nurseData);
-          setSelectedImg(serviceData.profileImage || "/assets/BookANurseImages/doctor img (10).png");
+          setSelectedImg(
+            serviceData.profileImage ||
+              "/assets/BookANurseImages/doctor img (10).png"
+          );
         }
       } catch (error) {
-        console.error('Error fetching nurse details:', error);
-        navigate('/book-nurse');
+        console.error("Error fetching nurse details:", error);
+        navigate("/book-nurse");
       } finally {
         setLoading(false);
       }
@@ -59,17 +62,17 @@ const NurseDetail = () => {
   }, [nurseId, navigate]);
 
   const handleDecrease = (type) => {
-    if (type === 'quantity' && quantity > 1) {
+    if (type === "quantity" && quantity > 1) {
       setQuantity(quantity - 1);
-    } else if (type === 'days' && days > 1) {
+    } else if (type === "days" && days > 1) {
       setDays(days - 1);
     }
   };
 
   const handleIncrease = (type) => {
-    if (type === 'quantity') {
+    if (type === "quantity") {
       setQuantity(quantity + 1);
-    } else if (type === 'days') {
+    } else if (type === "days") {
       setDays(days + 1);
     }
   };
@@ -83,7 +86,9 @@ const NurseDetail = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-2xl font-semibold text-[#34658C]">Loading nurse details...</div>
+        <div className="text-2xl font-semibold text-[#34658C]">
+          Loading nurse details...
+        </div>
       </div>
     );
   }
@@ -91,15 +96,21 @@ const NurseDetail = () => {
   if (!nurse) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-2xl font-semibold text-gray-500">Nurse not found</div>
+        <div className="text-2xl font-semibold text-gray-500">
+          Nurse not found
+        </div>
       </div>
     );
   }
 
   // Prepare images array
-  const allImages = nurse.certificates && nurse.certificates.length > 0
-    ? [nurse.profileImage, ...nurse.certificates.map(cert => cert.url)].filter(Boolean)
-    : [nurse.profileImage].filter(Boolean);
+  const allImages =
+    nurse.certificates && nurse.certificates.length > 0
+      ? [
+          nurse.profileImage,
+          ...nurse.certificates.map((cert) => cert.url),
+        ].filter(Boolean)
+      : [nurse.profileImage].filter(Boolean);
 
   return (
     <>
@@ -118,10 +129,11 @@ const NurseDetail = () => {
                   key={index}
                   src={img}
                   alt={`${nurse.fullName} certificate ${index}`}
-                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${selectedImg === img
-                    ? "border-[#000000]"
-                    : "border-transparent"
-                    }`}
+                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${
+                    selectedImg === img
+                      ? "border-[#000000]"
+                      : "border-transparent"
+                  }`}
                   style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
                   onClick={() => setSelectedImg(img)}
                 />
@@ -145,7 +157,7 @@ const NurseDetail = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    {nurse.gender === 'female' ? (
+                    {nurse.gender === "female" ? (
                       <IoMdFemale className="w-[14px] h-[14px] md:w-[16px] md:h-[16px]" />
                     ) : (
                       <IoMdMale className="w-[14px] h-[14px] md:w-[16px] md:h-[16px]" />
@@ -170,7 +182,7 @@ const NurseDetail = () => {
                         type="radio"
                         name="rentalType"
                         value="perHour"
-                        checked={rentalType === 'perHour'}
+                        checked={rentalType === "perHour"}
                         onChange={(e) => setRentalType(e.target.value)}
                       />
                       Hour
@@ -182,7 +194,7 @@ const NurseDetail = () => {
                         type="radio"
                         name="rentalType"
                         value="perDay"
-                        checked={rentalType === 'perDay'}
+                        checked={rentalType === "perDay"}
                         onChange={(e) => setRentalType(e.target.value)}
                       />
                       Day
@@ -194,7 +206,7 @@ const NurseDetail = () => {
                         type="radio"
                         name="rentalType"
                         value="perWeek"
-                        checked={rentalType === 'perWeek'}
+                        checked={rentalType === "perWeek"}
                         onChange={(e) => setRentalType(e.target.value)}
                       />
                       Week
@@ -206,7 +218,7 @@ const NurseDetail = () => {
                         type="radio"
                         name="rentalType"
                         value="perMonth"
-                        checked={rentalType === 'perMonth'}
+                        checked={rentalType === "perMonth"}
                         onChange={(e) => setRentalType(e.target.value)}
                       />
                       Month
@@ -214,13 +226,19 @@ const NurseDetail = () => {
                   )}
                 </div>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                  {rentalType === 'perHour' && 'Hourly: '}
-                  {rentalType === 'perDay' && 'Daily: '}
-                  {rentalType === 'perWeek' && 'Weekly: '}
-                  {rentalType === 'perMonth' && 'Monthly: '}
+                  {rentalType === "perHour" && "Hourly: "}
+                  {rentalType === "perDay" && "Daily: "}
+                  {rentalType === "perWeek" && "Weekly: "}
+                  {rentalType === "perMonth" && "Monthly: "}
                   <span className="text-[16px] leading-[32px] tracking-[0.64px] md:text-[20px] md:leading-[32px] md:tracking-[0.8px] text-[#34658C] font-bold">
                     ₹{nurse.pricings?.[rentalType] || 0}/
-                    {rentalType === 'perHour' ? 'Hour' : rentalType === 'perDay' ? 'Day' : rentalType === 'perWeek' ? 'Week' : 'Month'}
+                    {rentalType === "perHour"
+                      ? "Hour"
+                      : rentalType === "perDay"
+                      ? "Day"
+                      : rentalType === "perWeek"
+                      ? "Week"
+                      : "Month"}
                   </span>
                 </p>
               </div>
@@ -238,7 +256,7 @@ const NurseDetail = () => {
                           type="radio"
                           name="visitTime"
                           value="morning"
-                          checked={visitTime === 'morning'}
+                          checked={visitTime === "morning"}
                           onChange={(e) => setVisitTime(e.target.value)}
                         />
                         Morning ({nurse.availableVisitTimings.morning})
@@ -250,7 +268,7 @@ const NurseDetail = () => {
                           type="radio"
                           name="visitTime"
                           value="afternoon"
-                          checked={visitTime === 'afternoon'}
+                          checked={visitTime === "afternoon"}
                           onChange={(e) => setVisitTime(e.target.value)}
                         />
                         Afternoon ({nurse.availableVisitTimings.afternoon})
@@ -262,10 +280,22 @@ const NurseDetail = () => {
                           type="radio"
                           name="visitTime"
                           value="evening"
-                          checked={visitTime === 'evening'}
+                          checked={visitTime === "evening"}
                           onChange={(e) => setVisitTime(e.target.value)}
                         />
                         Evening ({nurse.availableVisitTimings.evening})
+                      </label>
+                    )}
+                    {nurse.availableVisitTimings.night && (
+                      <label className="accent-[#93BB42] flex items-center gap-2 text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
+                        <input
+                          type="radio"
+                          name="visitTime"
+                          value="night"
+                          checked={visitTime === "night"}
+                          onChange={(e) => setVisitTime(e.target.value)}
+                        />
+                        Night ({nurse.availableVisitTimings.night})
                       </label>
                     )}
                   </div>
@@ -280,7 +310,7 @@ const NurseDetail = () => {
                   <div className="flex gap-1 md:gap-2 justify-center items-center  ">
                     <button
                       className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleDecrease('days')}
+                      onClick={() => handleDecrease("days")}
                     >
                       <FaMinus className="text-[20px] text-[#333333] " />
                     </button>
@@ -289,7 +319,7 @@ const NurseDetail = () => {
                     </span>
                     <button
                       className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleIncrease('days')}
+                      onClick={() => handleIncrease("days")}
                     >
                       <FaPlus className="text-[20px] text-[#333333]" />
                     </button>
@@ -304,7 +334,7 @@ const NurseDetail = () => {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={new Date().toISOString().split("T")[0]}
                     className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
                   />
                 </div>
@@ -342,7 +372,8 @@ const NurseDetail = () => {
                   About
                 </h1>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                  {nurse.about || "Experienced healthcare professional dedicated to providing quality care."}
+                  {nurse.about ||
+                    "Experienced healthcare professional dedicated to providing quality care."}
                 </p>
               </div>
 

@@ -2,11 +2,15 @@ import React, { useRef, useState, useEffect } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineMyLocation } from "react-icons/md";
 import { faqData } from '../../utils/Data';
-import { Link } from 'react-router-dom';
-import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi } from '../../apis/authapis';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi, globalSearchApi } from '../../apis/authapis';
 
 const BookNurse = () => {
   const selectRef = useRef(null);
+  const hasFetchedDropdownData = useRef(false); // Track if dropdown data has been fetched
+  const lastSearchQuery = useRef(null); // Track last search query to prevent duplicates
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // State for API data
   const [nurses, setNurses] = useState([]);
@@ -15,6 +19,11 @@ const BookNurse = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 10;
+
+  // Get search parameters from URL
+  const urlSubCategory = searchParams.get('subCategory');
+  const urlLocation = searchParams.get('location');
+  const searchQuery = searchParams.get('search'); // Keep for backward compatibility
 
   // State for dropdown data
   const [dropdownData, setDropdownData] = useState({
@@ -35,22 +44,49 @@ const BookNurse = () => {
   const [isFilterActive, setIsFilterActive] = useState(false);
   const [selectedValue, setSelectedValue] = useState("Nearest");
 
-  // Fetch dropdown data on mount
+  // Initialize filters from URL parameters on mount
   useEffect(() => {
-    fetchDropdownData();
+    if (urlSubCategory || urlLocation) {
+      console.log('🏠 Home page search detected:', { urlSubCategory, urlLocation });
+      console.log('📌 Setting isFilterActive to TRUE');
+      setFilters(prev => ({
+        ...prev,
+        subCategory: urlSubCategory || "",
+        location: urlLocation || ""
+      }));
+      setIsFilterActive(true);
+    }
+  }, [urlSubCategory, urlLocation]);
+
+  // Fetch dropdown data on mount (only once)
+  useEffect(() => {
+    if (!hasFetchedDropdownData.current) {
+      console.log('📥 Fetching dropdown data...');
+      hasFetchedDropdownData.current = true;
+      fetchDropdownData();
+    }
   }, []);
 
-  // Fetch nurses on mount and page change
+  // Fetch nurses on mount, page change, filter change, or search query change
   useEffect(() => {
+    // Skip initial fetch if URL params exist but isFilterActive hasn't been set yet
+    // This prevents duplicate calls: one without filters, then one with filters
+    if ((urlSubCategory || urlLocation) && !isFilterActive) {
+      console.log('⏭️ Skipping initial fetch - waiting for filter activation from URL params');
+      return;
+    }
+
     fetchNurses(currentPage);
-  }, [currentPage, isFilterActive]);
+  }, [currentPage, isFilterActive, searchQuery]);
 
   // Fetch dropdown data from API
   const fetchDropdownData = async () => {
     try {
+      console.log('🌐 Calling getFilterDropdownDataApi...');
       const response = await getFilterDropdownDataApi();
       if (response.data.success) {
         const data = response.data.data;
+        console.log('✅ Dropdown data fetched successfully');
         setDropdownData({
           equipmentSubCategories: data.subCategories.equipment || [],
           serviceSubCategories: data.subCategories.service || [],
@@ -60,13 +96,17 @@ const BookNurse = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching dropdown data:', error);
+      console.error('❌ Error fetching dropdown data:', error);
     }
   };
 
-  // Check if any filter has a value
+  // Check if any filter has a value (including URL params)
   const hasActiveFilters = () => {
-    return Object.values(filters).some(value => value !== "");
+    return (
+      urlSubCategory ||
+      urlLocation ||
+      Object.values(filters).some(value => value !== "")
+    );
   };
 
   const fetchNurses = async (page) => {
@@ -74,25 +114,80 @@ const BookNurse = () => {
       setLoading(true);
       let response;
 
-      // Only use filter API if there are actual filter values
-      if (isFilterActive && hasActiveFilters()) {
-        // Use filter API when filters are active and have values
-        response = await getNurseFiltersApi({
-          ...filters,
+      console.log('🔄 fetchNurses called with:', {
+        page,
+        searchQuery,
+        urlSubCategory,
+        urlLocation,
+        isFilterActive,
+        hasActiveFilters: hasActiveFilters()
+      });
+
+      // Priority 1: Check if there's a global search query from header
+      if (searchQuery) {
+        console.log('🔍 Global search query detected:', searchQuery);
+
+        // Build a unique key for this search
+        const searchKey = `${searchQuery}-${page}`;
+
+        // Check if we've already searched for this exact query + page combo
+        if (lastSearchQuery.current === searchKey) {
+          console.log('⏭️ Skipping duplicate global search for:', searchQuery, 'page:', page);
+          setLoading(false);
+          return;
+        }
+
+        lastSearchQuery.current = searchKey;
+        response = await globalSearchApi(searchQuery, page, limit);
+
+        if (response.data.success) {
+          // Filter to show only service results
+          const serviceResults = response.data.data.filter(
+            item => item.resultType === 'service'
+          );
+          console.log(`✅ Global search found ${serviceResults.length} service results`);
+          setNurses(serviceResults);
+          setTotalPages(response.data.totalPages);
+          setTotal(serviceResults.length);
+        }
+      }
+      // Priority 2: Check if filters are active (from URL params or local filters)
+      else if (isFilterActive && hasActiveFilters()) {
+        console.log('✅ Filter conditions met - using filter API');
+
+        // Build filter object - prioritize URL params if they exist
+        const filterParams = {
+          subCategory: urlSubCategory || filters.subCategory,
+          location: urlLocation || filters.location,
+          experience: filters.experience,
+          gender: filters.gender,
           page,
           limit
-        });
-      } else {
-        // Use regular API when no filters or all filters are empty
-        response = await getAllNursesApi(page, limit);
-      }
+        };
 
-      if (response.data.success) {
-        console.log('API Response:', response.data);
-        console.log('Nurse data sample:', response.data.data[0]);
-        setNurses(response.data.data);
-        setTotalPages(response.data.totalPages);
-        setTotal(response.data.total);
+        console.log('🔍 Applying filters:', filterParams);
+
+        // Use filter API when filters are active and have values
+        response = await getNurseFiltersApi(filterParams);
+
+        if (response.data.success) {
+          console.log(`✅ Filter API found ${response.data.data.length} results`);
+          setNurses(response.data.data);
+          setTotalPages(response.data.totalPages);
+          setTotal(response.data.total);
+        }
+      }
+      // Priority 3: Default - fetch all nurses
+      else {
+        console.log('📋 Fetching all nurses (no search/filters)');
+        console.log('   Reason: isFilterActive =', isFilterActive, ', hasActiveFilters =', hasActiveFilters());
+        response = await getAllNursesApi(page, limit);
+
+        if (response.data.success) {
+          setNurses(response.data.data);
+          setTotalPages(response.data.totalPages);
+          setTotal(response.data.total);
+        }
       }
     } catch (error) {
       console.error('Error fetching nurses:', error);
@@ -122,7 +217,12 @@ const BookNurse = () => {
 
   // Handle search button click
   const handleSearch = () => {
-    console.log('🔍 Search clicked with filters:', filters);
+    // Clear global search and home page search params from URL when using local filters
+    if (searchQuery || urlSubCategory || urlLocation) {
+      console.log('🔄 Clearing URL search parameters, switching to local filters');
+      navigate('/book-nurse', { replace: true });
+    }
+
     // Check if there are any filter values
     if (hasActiveFilters()) {
       setIsFilterActive(true);

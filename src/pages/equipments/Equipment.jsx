@@ -2,11 +2,13 @@ import React, { useRef, useState, useEffect } from "react";
 import { MdKeyboardArrowDown, MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineMyLocation } from "react-icons/md";
 import { faqData } from "../../utils/Data";
-import { Link } from "react-router-dom";
-import { getAllEquipmentsApi, getEquipmentFiltersApi, getFilterDropdownDataApi } from "../../apis/authapis";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { getAllEquipmentsApi, getEquipmentFiltersApi, getFilterDropdownDataApi, globalSearchApi } from "../../apis/authapis";
 
 const Equipment = () => {
   const selectRef = useRef(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // State for API data
   const [equipments, setEquipments] = useState([]);
@@ -15,6 +17,9 @@ const Equipment = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 10;
+
+  // Get search query from URL
+  const searchQuery = searchParams.get('search');
 
   // State for dropdown data
   const [dropdownData, setDropdownData] = useState({
@@ -40,21 +45,21 @@ const Equipment = () => {
     fetchDropdownData();
   }, []);
 
-  // Fetch equipments on mount and page change
+  // Fetch equipments on mount, page change, filter change, or search query change
   useEffect(() => {
     fetchEquipments(currentPage);
-  }, [currentPage, isFilterActive]);
+  }, [currentPage, isFilterActive, searchQuery]);
 
   // Fetch dropdown data from API
   const fetchDropdownData = async () => {
     try {
-      console.log('Fetching dropdown data...');
+      // console.log('Fetching dropdown data...');
       const response = await getFilterDropdownDataApi();
-      console.log('Dropdown API Response:', response);
+      // console.log('Dropdown API Response:', response);
 
       if (response.data.success) {
         const data = response.data.data;
-        console.log('Dropdown data received:', data);
+        // console.log('Dropdown data received:', data);
 
         const newDropdownData = {
           equipmentSubCategories: data.subCategories.equipment || [],
@@ -64,7 +69,7 @@ const Equipment = () => {
           maxPrice: data.pricing.max || 0
         };
 
-        console.log('Setting dropdown data:', newDropdownData);
+        // console.log('Setting dropdown data:', newDropdownData);
         setDropdownData(newDropdownData);
       } else {
         console.warn('API returned success: false');
@@ -85,8 +90,24 @@ const Equipment = () => {
       setLoading(true);
       let response;
 
-      // Only use filter API if there are actual filter values
-      if (isFilterActive && hasActiveFilters()) {
+      // Priority 1: Check if there's a global search query from header
+      if (searchQuery) {
+        console.log('🔍 Global search query detected:', searchQuery);
+        response = await globalSearchApi(searchQuery, page, limit);
+
+        if (response.data.success) {
+          // Filter to show only equipment results
+          const equipmentResults = response.data.data.filter(
+            item => item.resultType === 'equipment'
+          );
+          console.log(`✅ Global search found ${equipmentResults.length} equipment results`);
+          setEquipments(equipmentResults);
+          setTotalPages(response.data.totalPages);
+          setTotal(equipmentResults.length);
+        }
+      }
+      // Priority 2: Check if filters are active
+      else if (isFilterActive && hasActiveFilters()) {
         // Use filter API when filters are active and have values
         const filterPayload = {
           ...filters,
@@ -96,23 +117,24 @@ const Equipment = () => {
 
         console.log('🔍 Sending filters to backend:', filterPayload);
         response = await getEquipmentFiltersApi(filterPayload);
-      } else {
-        // Use regular API when no filters or all filters are empty
-        console.log('📋 Fetching all equipment (no filters)');
-        response = await getAllEquipmentsApi(page, limit);
-      }
 
-      if (response.data.success) {
-        console.log('✅ API Response:', response.data);
-        console.log(`📊 Found ${response.data.total} items, showing page ${response.data.currentPage} of ${response.data.totalPages}`);
-        if (response.data.data.length > 0) {
-          console.log('📦 First item sample:', response.data.data[0]);
-        } else {
-          console.warn('⚠️ No equipment found with current filters:', filters);
+        if (response.data.success) {
+          console.log('✅ Filter API Response:', response.data);
+          setEquipments(response.data.data);
+          setTotalPages(response.data.totalPages);
+          setTotal(response.data.total);
         }
-        setEquipments(response.data.data);
-        setTotalPages(response.data.totalPages);
-        setTotal(response.data.total);
+      }
+      // Priority 3: Default - fetch all equipment
+      else {
+        console.log('📋 Fetching all equipment (no search/filters)');
+        response = await getAllEquipmentsApi(page, limit);
+
+        if (response.data.success) {
+          setEquipments(response.data.data);
+          setTotalPages(response.data.totalPages);
+          setTotal(response.data.total);
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching equipments:', error);
@@ -143,6 +165,12 @@ const Equipment = () => {
 
   // Handle search button click
   const handleSearch = () => {
+    // Clear global search from URL when using local filters
+    if (searchQuery) {
+      console.log('🔄 Clearing global search, switching to local filters');
+      navigate('/equipments', { replace: true });
+    }
+
     // Check if there are any filter values
     if (hasActiveFilters()) {
       setIsFilterActive(true);
@@ -386,7 +414,10 @@ const Equipment = () => {
                             </span>
                           </p>
                           <div className="flex gap-2 mt-[6px]">
-                            <button className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
+                            <button
+                              className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                              onClick={() => navigate('/cart')}
+                            >
                               Add To Cart
                             </button>
                             <Link to={`/equipment/${equipment._id}`}>

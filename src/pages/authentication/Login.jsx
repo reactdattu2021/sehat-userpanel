@@ -30,7 +30,7 @@ const Login = ({ setSignInOpen, setSignUpOpen }) => {
 
         setLoading(false);
     };
-
+    
     const handleGoogleLogin = () => {
         console.log('Google login clicked');
         const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/Sehatmitra';

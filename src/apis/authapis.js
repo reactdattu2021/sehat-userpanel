@@ -148,6 +148,9 @@ export const getNurseFiltersApi = (filters = {}) => {
   if (filters.experience) params.experience = filters.experience;
   if (filters.gender) params.gender = filters.gender;
 
+  console.log('🌐 getNurseFiltersApi - Sending params:', params);
+  console.log('📍 API Endpoint: /user/servicefilters');
+
   return axiosInstance.get('/user/servicefilters', { params });
 };
 
@@ -156,5 +159,42 @@ export const getNurseFiltersApi = (filters = {}) => {
 // ==================
 export const getFilterDropdownDataApi = () => {
   return axiosInstance.get('/services/filterdata/dropdown');
+};
+
+// ==================
+// 18. GLOBAL SEARCH
+// ==================
+export const globalSearchApi = (search, page = 1, limit = 10) => {
+  return axiosInstance.get('/services/globalsearch', {
+    params: { search, page, limit }
+  });
+};
+
+// ==================
+// 19. CREATE ADDRESS
+// ==================
+export const createAddressApi = (addressData) => {
+  return axiosInstance.post('/userAddress/create', addressData);
+};
+
+// ==================
+// 20. GET ALL ADDRESSES
+// ==================
+export const getAllAddressesApi = () => {
+  return axiosInstance.get('/userAddress/');
+};
+
+// ==================
+// 21. UPDATE ADDRESS
+// ==================
+export const updateAddressApi = (addressId, addressData) => {
+  return axiosInstance.put(`/userAddress/update/${addressId}`, addressData);
+};
+
+// ==================
+// 22. DELETE ADDRESS
+// ==================
+export const deleteAddressApi = (addressId) => {
+  return axiosInstance.delete(`/userAddress/delete/${addressId}`);
 };
 
