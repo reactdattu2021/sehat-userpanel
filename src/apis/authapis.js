@@ -270,3 +270,10 @@ export const createBookingApi = (bookingData) => {
 export const verifyPaymentApi = (paymentData) => {
   return axiosInstance.post('/user/payment/verify', paymentData);
 };
+
+// ==================
+// 32. GET BOOKING DETAILS BY ID (For Thank You Page)
+// ==================
+export const getBookingDetailsApi = (bookingId) => {
+  return axiosInstance.get(`/user/booking/${bookingId}`);
+};

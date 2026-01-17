@@ -20,6 +20,7 @@ const NurseDetail = () => {
   const [days, setDays] = useState(1);
   const [rentalType, setRentalType] = useState("perHour");
   const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("09:00"); // Default to 9 AM
   const [visitTime, setVisitTime] = useState("morning");
 
   // Fetch nurse details
@@ -95,6 +96,11 @@ const NurseDetail = () => {
       return;
     }
 
+    if (!selectedTime) {
+      toast.error('Please select a start time');
+      return;
+    }
+
     if (!rentalType) {
       toast.error('Please select service duration');
       return;
@@ -118,13 +124,17 @@ const NurseDetail = () => {
     }
 
     // Navigate to checkout with booking data
-    // Create a date object that combines the selected date with current time
+    // Combine selected date and time into a single datetime
+    const [hours, minutes] = selectedTime.split(':');
     const selectedDateTime = new Date(selectedDate);
-    const now = new Date();
+    selectedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-    // Set the time to current time + 5 minutes buffer to avoid "past date" errors
-    // This accounts for time spent in checkout/payment process
-    selectedDateTime.setHours(now.getHours(), now.getMinutes() + 5, now.getSeconds(), now.getMilliseconds());
+    // Validate that the selected datetime is not in the past
+    const now = new Date();
+    if (selectedDateTime < now) {
+      toast.error('Please select a future date and time');
+      return;
+    }
 
     navigate('/checkout', {
       state: {
@@ -205,6 +215,12 @@ const NurseDetail = () => {
                 />
               ))}
             </div>
+            <button
+              className="bg-[#34658C] text-white px-[64px] py-4 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] font-semibold w-full md:w-fit font-outfit"
+              onClick={() => navigate('/cart')}
+            >
+              Add To Cart
+            </button>
           </div>
           <div className="col-span-12 lg:col-span-7">
             <div className="flex flex-col gap-2 md:gap-4 xl:gap-6">
@@ -392,7 +408,7 @@ const NurseDetail = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-4">
                   <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]  font-semibold">
                     Select Date
                   </p>
@@ -401,6 +417,18 @@ const NurseDetail = () => {
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     min={new Date().toISOString().split("T")[0]}
+                    className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]  font-semibold">
+                    Select Time
+                  </p>
+                  <input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
                     className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
                   />
                 </div>
