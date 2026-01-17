@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa6";
+import { toast } from "react-toastify";
 import { getEquipmentByIdApi } from "../../apis/authapis";
 
 const EquipmentDetail = () => {
@@ -65,6 +66,71 @@ const EquipmentDetail = () => {
     if (!equipment) return 0;
     const basePrice = equipment.pricings[rentalType];
     return basePrice * quantity * days;
+  };
+
+  const handleRentNow = () => {
+    // Validation
+    if (!equipment) {
+      toast.error('Equipment data not loaded');
+      return;
+    }
+
+    if (!selectedDate) {
+      toast.error('Please select a start date');
+      return;
+    }
+
+    if (!rentalType) {
+      toast.error('Please select rental duration');
+      return;
+    }
+
+    if (days <= 0) {
+      toast.error('Please select valid number of days');
+      return;
+    }
+
+    if (quantity <= 0) {
+      toast.error('Quantity must be greater than 0');
+      return;
+    }
+
+    // Check if pricing is available for selected rental type
+    if (!equipment.pricings[rentalType]) {
+      toast.error(`${rentalType} pricing not available for this equipment`);
+      return;
+    }
+
+    // Navigate to checkout with booking data
+    // Create a date object that combines the selected date with current time
+    const selectedDateTime = new Date(selectedDate);
+    const now = new Date();
+
+    // Set the time to current time + 5 minutes buffer to avoid "past date" errors
+    // This accounts for time spent in checkout/payment process
+    selectedDateTime.setHours(now.getHours(), now.getMinutes() + 5, now.getSeconds(), now.getMilliseconds());
+
+    navigate('/checkout', {
+      state: {
+        isDirectBooking: true,
+        bookingData: {
+          productId: equipment._id,
+          productType: 'equipment',
+          productName: equipment.equipmentName,
+          productImage: equipment.profileImage,
+          rentalDuration: rentalType,
+          rentalValue: days,
+          quantity: quantity,
+          startDate: selectedDateTime.toISOString(),
+          pricing: {
+            unitPrice: equipment.pricings[rentalType],
+            shippingCost: equipment.pricings.shippingCost || 0,
+            taxPercentage: equipment.pricings.taxPercentage || 0,
+            securityDeposit: equipment.pricings.securityDeposit || 0
+          }
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -246,7 +312,10 @@ const EquipmentDetail = () => {
                   </span>
                 </p>
               </div>
-              <button className="font-outfit bg-[#A2CD48] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] text-white px-[44px] py-3 rounded-[12px] w-full md:w-fit">
+              <button
+                className="font-outfit bg-[#A2CD48] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] text-white px-[44px] py-3 rounded-[12px] w-full md:w-fit"
+                onClick={handleRentNow}
+              >
                 Rent Now
               </button>
             </div>

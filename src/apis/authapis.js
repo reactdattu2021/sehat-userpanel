@@ -198,3 +198,75 @@ export const deleteAddressApi = (addressId) => {
   return axiosInstance.delete(`/userAddress/delete/${addressId}`);
 };
 
+// ==================
+// 23. GET USER BOOKINGS
+// ==================
+export const getUserBookingsApi = (status = null) => {
+  const params = status ? { status } : {};
+  return axiosInstance.get('/booking/user', { params });
+};
+
+// ==================
+// 24. GET BOOKING DETAILS BY ID
+// ==================
+export const getBookingByIdApi = (bookingId) => {
+  return axiosInstance.get(`/booking/${bookingId}`);
+};
+
+// ==================
+// 25. CANCEL BOOKING
+// ==================
+export const cancelBookingApi = (bookingId) => {
+  return axiosInstance.delete(`/booking/cancel/${bookingId}`);
+};
+
+
+
+// ==================
+// 26. GET ALL COUPONS
+// ==================
+export const getAllCouponsApi = (page = 1, limit = 10) => {
+  return axiosInstance.get('/user/all/coupon', {
+    params: { page, limit }
+  });
+};
+
+// ==================
+// 27. SEARCH COUPONS
+// ==================
+export const searchCouponsApi = (keyword) => {
+  return axiosInstance.get('/user/search', {
+    params: { keyword }
+  });
+};
+
+// ==================
+// 28. APPLY COUPON (Direct Booking - Validation)
+// ==================
+export const applyCouponApi = (couponCode, selectedCartIds) => {
+  return axiosInstance.post('/Sehatmitra/user/apply/coupon', {
+    couponCode,
+    selectedCartIds
+  });
+};
+
+// ==================
+// 29. BUY NOW API (Direct Booking with Payment)
+// ==================
+export const buyNowApi = (buyNowData) => {
+  return axiosInstance.post('/user/booking/buy-now', buyNowData);
+};
+
+// ==================
+// 30. CREATE BOOKING API (Cart-based Booking)
+// ==================
+export const createBookingApi = (bookingData) => {
+  return axiosInstance.post('/user/booking/create', bookingData);
+};
+
+// ==================
+// 31. VERIFY PAYMENT API (Razorpay Payment Verification)
+// ==================
+export const verifyPaymentApi = (paymentData) => {
+  return axiosInstance.post('/user/payment/verify', paymentData);
+};

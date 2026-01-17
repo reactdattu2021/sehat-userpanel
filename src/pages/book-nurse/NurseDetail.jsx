@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import { FaUser } from "react-icons/fa6";
 import { IoMdFemale, IoMdMale } from "react-icons/io";
-import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import { getNurseByIdApi } from "../../apis/authapis";
 
 const NurseDetail = () => {
@@ -45,7 +45,7 @@ const NurseDetail = () => {
           setNurse(nurseData);
           setSelectedImg(
             serviceData.profileImage ||
-              "/assets/BookANurseImages/doctor img (10).png"
+            "/assets/BookANurseImages/doctor img (10).png"
           );
         }
       } catch (error) {
@@ -83,6 +83,73 @@ const NurseDetail = () => {
     return basePrice * quantity * days;
   };
 
+  const handleBookNow = () => {
+    // Validation
+    if (!nurse) {
+      toast.error('Nurse data not loaded');
+      return;
+    }
+
+    if (!selectedDate) {
+      toast.error('Please select a start date');
+      return;
+    }
+
+    if (!rentalType) {
+      toast.error('Please select service duration');
+      return;
+    }
+
+    if (days <= 0) {
+      toast.error('Please select valid number of days');
+      return;
+    }
+
+    // Check if visit time is required and selected
+    if (nurse.availableVisitTimings && !visitTime) {
+      toast.error('Please select visit time');
+      return;
+    }
+
+    // Check if pricing is available for selected rental type
+    if (!nurse.pricings[rentalType]) {
+      toast.error(`${rentalType} pricing not available for this service`);
+      return;
+    }
+
+    // Navigate to checkout with booking data
+    // Create a date object that combines the selected date with current time
+    const selectedDateTime = new Date(selectedDate);
+    const now = new Date();
+
+    // Set the time to current time + 5 minutes buffer to avoid "past date" errors
+    // This accounts for time spent in checkout/payment process
+    selectedDateTime.setHours(now.getHours(), now.getMinutes() + 5, now.getSeconds(), now.getMilliseconds());
+
+    navigate('/checkout', {
+      state: {
+        isDirectBooking: true,
+        bookingData: {
+          productId: nurse._id,
+          productType: 'services',
+          productName: nurse.fullName,
+          productImage: nurse.profileImage,
+          rentalDuration: rentalType,
+          rentalValue: days,
+          quantity: 1, // Services typically don't have quantity
+          startDate: selectedDateTime.toISOString(),
+          visitTimings: visitTime ? [visitTime] : [],
+          pricing: {
+            unitPrice: nurse.pricings[rentalType],
+            shippingCost: 0, // Services don't have shipping
+            taxPercentage: 0,
+            securityDeposit: nurse.pricings.securityDeposit || 0
+          }
+        }
+      }
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -107,9 +174,9 @@ const NurseDetail = () => {
   const allImages =
     nurse.certificates && nurse.certificates.length > 0
       ? [
-          nurse.profileImage,
-          ...nurse.certificates.map((cert) => cert.url),
-        ].filter(Boolean)
+        nurse.profileImage,
+        ...nurse.certificates.map((cert) => cert.url),
+      ].filter(Boolean)
       : [nurse.profileImage].filter(Boolean);
 
   return (
@@ -129,11 +196,10 @@ const NurseDetail = () => {
                   key={index}
                   src={img}
                   alt={`${nurse.fullName} certificate ${index}`}
-                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${
-                    selectedImg === img
-                      ? "border-[#000000]"
-                      : "border-transparent"
-                  }`}
+                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${selectedImg === img
+                    ? "border-[#000000]"
+                    : "border-transparent"
+                    }`}
                   style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
                   onClick={() => setSelectedImg(img)}
                 />
@@ -235,10 +301,10 @@ const NurseDetail = () => {
                     {rentalType === "perHour"
                       ? "Hour"
                       : rentalType === "perDay"
-                      ? "Day"
-                      : rentalType === "perWeek"
-                      ? "Week"
-                      : "Month"}
+                        ? "Day"
+                        : rentalType === "perWeek"
+                          ? "Week"
+                          : "Month"}
                   </span>
                 </p>
               </div>
@@ -356,11 +422,12 @@ const NurseDetail = () => {
                   </p>
                 )}
               </div>
-              <Link to="/cart">
-                <button className="font-outfit bg-[#A2CD48] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] text-white px-[44px] py-3 rounded-[12px] w-full md:w-fit">
-                  Book Nurse
-                </button>
-              </Link>
+              <button
+                className="font-outfit bg-[#A2CD48] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] text-white px-[44px] py-3 rounded-[12px] w-full md:w-fit"
+                onClick={handleBookNow}
+              >
+                Book Nurse
+              </button>
             </div>
             <hr className="my-[40px] border border-[#000000]" />
             <div className="flex flex-col gap-3">
