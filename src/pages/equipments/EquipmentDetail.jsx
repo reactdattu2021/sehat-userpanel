@@ -3,10 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import { getEquipmentByIdApi } from "../../apis/authapis";
+import AddToCartModal from "../../components/AddToCartModal";
 
 const EquipmentDetail = () => {
   const { equipmentId } = useParams();
   const navigate = useNavigate();
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Equipment data state
   const [equipment, setEquipment] = useState(null);
@@ -16,17 +20,18 @@ const EquipmentDetail = () => {
   const [selectedImg, setSelectedImg] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [days, setDays] = useState(1);
-  const [rentalType, setRentalType] = useState('perDay');
-  const [selectedDate, setSelectedDate] = useState('');
+  const [rentalType, setRentalType] = useState("perDay");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("08:00");
 
   // Fetch equipment details
   useEffect(() => {
     const fetchEquipmentDetails = async () => {
       try {
         setLoading(true);
-        console.log('Fetching equipment with ID:', equipmentId);
+        console.log("Fetching equipment with ID:", equipmentId);
         const response = await getEquipmentByIdApi(equipmentId);
-        console.log('API Response:', response.data);
+        console.log("API Response:", response.data);
 
         if (response.data.success) {
           const equipmentData = response.data.data;
@@ -34,8 +39,8 @@ const EquipmentDetail = () => {
           setSelectedImg(equipmentData.profileImage);
         }
       } catch (error) {
-        console.error('Error fetching equipment details:', error);
-        navigate('/equipments');
+        console.error("Error fetching equipment details:", error);
+        navigate("/equipments");
       } finally {
         setLoading(false);
       }
@@ -47,17 +52,17 @@ const EquipmentDetail = () => {
   }, [equipmentId, navigate]);
 
   const handleDecrease = (type) => {
-    if (type === 'quantity' && quantity > 1) {
+    if (type === "quantity" && quantity > 1) {
       setQuantity(quantity - 1);
-    } else if (type === 'days' && days > 1) {
+    } else if (type === "days" && days > 1) {
       setDays(days - 1);
     }
   };
 
   const handleIncrease = (type) => {
-    if (type === 'quantity') {
+    if (type === "quantity") {
       setQuantity(quantity + 1);
-    } else if (type === 'days') {
+    } else if (type === "days") {
       setDays(days + 1);
     }
   };
@@ -71,27 +76,31 @@ const EquipmentDetail = () => {
   const handleRentNow = () => {
     // Validation
     if (!equipment) {
-      toast.error('Equipment data not loaded');
+      toast.error("Equipment data not loaded");
       return;
     }
 
     if (!selectedDate) {
-      toast.error('Please select a start date');
+      toast.error("Please select a start date");
+      return;
+    }
+    if (!selectedTime) {
+      toast.error("Please select start time");
       return;
     }
 
     if (!rentalType) {
-      toast.error('Please select rental duration');
+      toast.error("Please select rental duration");
       return;
     }
 
     if (days <= 0) {
-      toast.error('Please select valid number of days');
+      toast.error("Please select valid number of days");
       return;
     }
 
     if (quantity <= 0) {
-      toast.error('Quantity must be greater than 0');
+      toast.error("Quantity must be greater than 0");
       return;
     }
 
@@ -103,19 +112,32 @@ const EquipmentDetail = () => {
 
     // Navigate to checkout with booking data
     // Create a date object that combines the selected date with current time
+    const [hours, minutes] = selectedTime.split(":");
     const selectedDateTime = new Date(selectedDate);
+    selectedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+    // PREVENT PAST DATE/TIME
     const now = new Date();
+    if (selectedDateTime < now) {
+      toast.error("Please select a future date and time");
+      return;
+    }
 
     // Set the time to current time + 5 minutes buffer to avoid "past date" errors
     // This accounts for time spent in checkout/payment process
-    selectedDateTime.setHours(now.getHours(), now.getMinutes() + 5, now.getSeconds(), now.getMilliseconds());
+    selectedDateTime.setHours(
+      now.getHours(),
+      now.getMinutes() + 5,
+      now.getSeconds(),
+      now.getMilliseconds(),
+    );
 
-    navigate('/checkout', {
+    navigate("/checkout", {
       state: {
         isDirectBooking: true,
         bookingData: {
           productId: equipment._id,
-          productType: 'equipment',
+          productType: "equipment",
           productName: equipment.equipmentName,
           productImage: equipment.profileImage,
           rentalDuration: rentalType,
@@ -126,17 +148,19 @@ const EquipmentDetail = () => {
             unitPrice: equipment.pricings[rentalType],
             shippingCost: equipment.pricings.shippingCost || 0,
             taxPercentage: equipment.pricings.taxPercentage || 0,
-            securityDeposit: equipment.pricings.securityDeposit || 0
-          }
-        }
-      }
+            securityDeposit: equipment.pricings.securityDeposit || 0,
+          },
+        },
+      },
     });
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-2xl font-semibold text-[#34658C]">Loading equipment details...</div>
+        <div className="text-2xl font-semibold text-[#34658C]">
+          Loading equipment details...
+        </div>
       </div>
     );
   }
@@ -144,7 +168,9 @@ const EquipmentDetail = () => {
   if (!equipment) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-2xl font-semibold text-gray-500">Equipment not found</div>
+        <div className="text-2xl font-semibold text-gray-500">
+          Equipment not found
+        </div>
       </div>
     );
   }
@@ -168,10 +194,11 @@ const EquipmentDetail = () => {
                   key={index}
                   src={img}
                   alt="equipmentPics"
-                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${selectedImg === img
-                    ? "border-[#000000]"
-                    : "border-transparent"
-                    }`}
+                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${
+                    selectedImg === img
+                      ? "border-[#000000]"
+                      : "border-transparent"
+                  }`}
                   style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
                   onClick={() => setSelectedImg(img)}
                 />
@@ -179,7 +206,7 @@ const EquipmentDetail = () => {
             </div>
             <button
               className="bg-[#34658C] text-white px-[64px] py-4 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] font-semibold w-full md:w-fit font-outfit"
-              onClick={() => navigate('/cart')}
+              onClick={() => setIsModalOpen(true)}
             >
               Add To Cart
             </button>
@@ -203,7 +230,7 @@ const EquipmentDetail = () => {
                       type="radio"
                       name="rentalType"
                       value="perDay"
-                      checked={rentalType === 'perDay'}
+                      checked={rentalType === "perDay"}
                       onChange={(e) => setRentalType(e.target.value)}
                     />
                     Daily Rent
@@ -213,7 +240,7 @@ const EquipmentDetail = () => {
                       type="radio"
                       name="rentalType"
                       value="perWeek"
-                      checked={rentalType === 'perWeek'}
+                      checked={rentalType === "perWeek"}
                       onChange={(e) => setRentalType(e.target.value)}
                     />
                     Weekly Rent
@@ -223,19 +250,23 @@ const EquipmentDetail = () => {
                       type="radio"
                       name="rentalType"
                       value="perMonth"
-                      checked={rentalType === 'perMonth'}
+                      checked={rentalType === "perMonth"}
                       onChange={(e) => setRentalType(e.target.value)}
                     />
                     Monthly Rent
                   </label>
                 </div>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                  {rentalType === 'perDay' && 'Daily: '}
-                  {rentalType === 'perWeek' && 'Weekly: '}
-                  {rentalType === 'perMonth' && 'Monthly: '}
+                  {rentalType === "perDay" && "Daily: "}
+                  {rentalType === "perWeek" && "Weekly: "}
+                  {rentalType === "perMonth" && "Monthly: "}
                   <span className="text-[16px] leading-[32px] tracking-[0.64px] md:text-[20px] md:leading-[32px] md:tracking-[0.8px] text-[#34658C] font-bold">
                     ₹{equipment.pricings[rentalType]}/
-                    {rentalType === 'perDay' ? 'Day' : rentalType === 'perWeek' ? 'Week' : 'Month'}
+                    {rentalType === "perDay"
+                      ? "Day"
+                      : rentalType === "perWeek"
+                        ? "Week"
+                        : "Month"}
                   </span>
                 </p>
               </div>
@@ -247,7 +278,7 @@ const EquipmentDetail = () => {
                   <div className="flex gap-1 md:gap-2 justify-center items-center ">
                     <button
                       className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleDecrease('days')}
+                      onClick={() => handleDecrease("days")}
                     >
                       <FaMinus className="text-[20px] text-[#333333] " />
                     </button>
@@ -256,7 +287,7 @@ const EquipmentDetail = () => {
                     </span>
                     <button
                       className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleIncrease('days')}
+                      onClick={() => handleIncrease("days")}
                     >
                       <FaPlus className="text-[20px] text-[#333333]" />
                     </button>
@@ -269,7 +300,7 @@ const EquipmentDetail = () => {
                   <div className="flex gap-1 md:gap-2 justify-center items-center  ">
                     <button
                       className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleDecrease('quantity')}
+                      onClick={() => handleDecrease("quantity")}
                     >
                       <FaMinus className="text-[20px] text-[#333333] " />
                     </button>
@@ -278,7 +309,7 @@ const EquipmentDetail = () => {
                     </span>
                     <button
                       className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleIncrease('quantity')}
+                      onClick={() => handleIncrease("quantity")}
                     >
                       <FaPlus className="text-[20px] text-[#333333]" />
                     </button>
@@ -292,8 +323,19 @@ const EquipmentDetail = () => {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={new Date().toISOString().split("T")[0]}
                     className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
+                  />
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
+                    Select Time
+                  </p>
+                  <input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px]"
                   />
                 </div>
               </div>
@@ -326,7 +368,8 @@ const EquipmentDetail = () => {
                   Product Details
                 </h1>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]">
-                  <span className="font-bold">Name:</span> {equipment.equipmentName}
+                  <span className="font-bold">Name:</span>{" "}
+                  {equipment.equipmentName}
                   <br />
                   {/* <span className="font-bold">Serial Number:</span> {equipment.serialNumber} */}
                   <br />
@@ -358,11 +401,17 @@ const EquipmentDetail = () => {
 
                 {equipment.features && equipment.features.length > 0 && (
                   <>
-                    <h1 className="text-[20px] font-semibold mt-4">Key Features:</h1>
+                    <h1 className="text-[20px] font-semibold mt-4">
+                      Key Features:
+                    </h1>
                     <div className="space-y-2">
                       {equipment.features.map((feature) => (
-                        <p key={feature._id} className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]">
-                          <span className="font-bold">{feature.key}:</span> {feature.value}
+                        <p
+                          key={feature._id}
+                          className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
+                        >
+                          <span className="font-bold">{feature.key}:</span>{" "}
+                          {feature.value}
                         </p>
                       ))}
                     </div>
@@ -411,6 +460,14 @@ const EquipmentDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Add To Cart Modal */}
+      <AddToCartModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        itemData={equipment}
+        itemType="equipment"
+      />
     </>
   );
 };

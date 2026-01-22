@@ -4,11 +4,16 @@ import { MdOutlineMyLocation } from "react-icons/md";
 import { faqData } from "../../utils/Data";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { getAllEquipmentsApi, getEquipmentFiltersApi, getFilterDropdownDataApi, globalSearchApi } from "../../apis/authapis";
+import AddToCartModal from "../../components/AddToCartModal";
 
 const Equipment = () => {
   const selectRef = useRef(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
 
   // State for API data
   const [equipments, setEquipments] = useState([]);
@@ -416,7 +421,10 @@ const Equipment = () => {
                           <div className="flex gap-2 mt-[6px]">
                             <button
                               className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
-                              onClick={() => navigate('/cart')}
+                              onClick={() => {
+                                setSelectedEquipment(equipment);
+                                setIsModalOpen(true);
+                              }}
                             >
                               Add To Cart
                             </button>
@@ -505,6 +513,17 @@ const Equipment = () => {
           ))}
         </div>
       </div>
+
+      {/* Add To Cart Modal */}
+      <AddToCartModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedEquipment(null);
+        }}
+        itemData={selectedEquipment}
+        itemType="equipment"
+      />
     </div>
   );
 };

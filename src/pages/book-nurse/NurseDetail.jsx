@@ -5,10 +5,14 @@ import { FaUser } from "react-icons/fa6";
 import { IoMdFemale, IoMdMale } from "react-icons/io";
 import { toast } from "react-toastify";
 import { getNurseByIdApi } from "../../apis/authapis";
+import AddToCartModal from "../../components/AddToCartModal";
 
 const NurseDetail = () => {
   const { nurseId } = useParams();
   const navigate = useNavigate();
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Nurse data state
   const [nurse, setNurse] = useState(null);
@@ -20,7 +24,7 @@ const NurseDetail = () => {
   const [days, setDays] = useState(1);
   const [rentalType, setRentalType] = useState("perHour");
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("09:00"); // Default to 9 AM
+  const [selectedTime, setSelectedTime] = useState("08:00"); // Default to 9 AM
   const [visitTime, setVisitTime] = useState("morning");
 
   // Fetch nurse details
@@ -217,7 +221,7 @@ const NurseDetail = () => {
             </div>
             <button
               className="bg-[#34658C] text-white px-[64px] py-4 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] font-semibold w-full md:w-fit font-outfit"
-              onClick={() => navigate('/cart')}
+              onClick={() => setIsModalOpen(true)}
             >
               Add To Cart
             </button>
@@ -567,6 +571,14 @@ const NurseDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Add To Cart Modal */}
+      <AddToCartModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        itemData={nurse}
+        itemType="service"
+      />
     </>
   );
 };

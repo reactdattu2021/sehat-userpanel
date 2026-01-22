@@ -4,6 +4,7 @@ import { MdOutlineMyLocation } from "react-icons/md";
 import { faqData } from '../../utils/Data';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi, globalSearchApi } from '../../apis/authapis';
+import AddToCartModal from '../../components/AddToCartModal';
 
 const BookNurse = () => {
   const selectRef = useRef(null);
@@ -11,6 +12,10 @@ const BookNurse = () => {
   const lastSearchQuery = useRef(null); // Track last search query to prevent duplicates
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedNurse, setSelectedNurse] = useState(null);
 
   // State for API data
   const [nurses, setNurses] = useState([]);
@@ -489,7 +494,13 @@ const BookNurse = () => {
                             </span>
                           </p>
                           <div className="flex gap-2 mt-[6px]">
-                            <button className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
+                            <button
+                              className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                              onClick={() => {
+                                setSelectedNurse(nurse);
+                                setIsModalOpen(true);
+                              }}
+                            >
                               Add To Cart
                             </button>
                             <Link to={`/nurse-detail/${nurse._id}`}>
@@ -572,6 +583,17 @@ const BookNurse = () => {
           ))}
         </div>
       </div>
+
+      {/* Add To Cart Modal */}
+      <AddToCartModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedNurse(null);
+        }}
+        itemData={selectedNurse}
+        itemType="service"
+      />
     </div>
   );
 };

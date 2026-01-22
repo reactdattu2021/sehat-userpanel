@@ -18,7 +18,7 @@ const CheckOut = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { isDirectBooking, bookingData } = location.state || {};
+  const { isDirectBooking, bookingData, cartItems } = location.state || {};
 
   const [openIndex, setOpenIndex] = useState(null);
   const [addresses, setAddresses] = useState([]);
@@ -53,6 +53,8 @@ const CheckOut = () => {
 
     if (isDirectBooking && bookingData) {
       calculateOrderSummary();
+    } else if (cartItems && cartItems.length > 0) {
+      calculateCartOrderSummary();
     }
   }, []);
 
@@ -65,7 +67,7 @@ const CheckOut = () => {
     // Backend: const baseAmount = unitPrice * qty * rentalValue;
     const baseAmount = pricing.unitPrice * quantity * rentalValue;
 
-    // Backend: const taxAmount = (baseAmount * taxPercentage) / 100;
+    // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
     const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
 
     // Backend: const safeShipping = productType === "services" ? 0 : shippingCost;
@@ -78,18 +80,6 @@ const CheckOut = () => {
 
     // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
     const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
-
-    console.log('📊 Order Summary Calculation:', {
-      unitPrice: pricing.unitPrice,
-      quantity,
-      rentalValue,
-      productType,
-      baseAmount,
-      taxAmount,
-      shippingCost,
-      securityDeposit,
-      totalAmount
-    });
 
     setOrderSummary({
       productName: bookingData.productName,
@@ -105,6 +95,41 @@ const CheckOut = () => {
       totalAmount,
       unitPrice: pricing.unitPrice,
       taxPercentage: pricing.taxPercentage,
+      discountAmount: 0,
+    });
+  };
+
+  const calculateCartOrderSummary = () => {
+    if (!cartItems || cartItems.length === 0) return;
+
+    let totalBase = 0;
+    let totalTax = 0;
+    let totalShipping = 0;
+    let totalSecurity = 0;
+
+    cartItems.forEach(item => {
+      const qty = item.cartquantity || 1;
+      const base = (item.productprice || 0) * qty;
+      const tax = (base * (item.producttaxpercentage || 0)) / 100;
+      const shipping = (item.productshippingcost || 0) * qty;
+      const security = (item.refundableSecurityDep || 0) * qty;
+
+      totalBase += base;
+      totalTax += tax;
+      totalShipping += shipping;
+      totalSecurity += security;
+    });
+
+    const totalAmount = totalBase + totalTax + totalShipping + totalSecurity;
+
+    setOrderSummary({
+      isCart: true,
+      itemCount: cartItems.length,
+      baseAmount: totalBase,
+      taxAmount: totalTax,
+      shippingCost: totalShipping,
+      securityDeposit: totalSecurity,
+      totalAmount: totalAmount,
       discountAmount: 0,
     });
   };
@@ -185,10 +210,9 @@ const CheckOut = () => {
       if (isDirectBooking && bookingData?.productId) {
         // For direct booking, pass the single product ID in an array
         selectedCartIds = [bookingData.productId];
-      } else {
-        // For cart-based booking, pass all cart item IDs
-        // TODO: When implementing cart, get cart IDs from cart state/data
-        selectedCartIds = []; // Will be populated with actual cart IDs
+      } else if (cartItems && cartItems.length > 0) {
+        // For cart-based booking, pass selected cart IDs
+        selectedCartIds = cartItems.map(item => item._id);
       }
 
       const response = await applyCouponApi(code, selectedCartIds);
@@ -368,11 +392,12 @@ const CheckOut = () => {
     navigate('/payment', {
       state: {
         isDirectBooking,
-        bookingData,
+        bookingData: isDirectBooking ? bookingData : { selectedCartIds: cartItems.map(item => item._id) },
         addressId: selectedAddressId,
         selectedAddress,
         orderSummary,
         appliedCoupon,
+        cartItems: isDirectBooking ? null : cartItems
       }
     });
   };
@@ -654,6 +679,68 @@ const CheckOut = () => {
                     </p>
                   </div>
                 )}
+              </div>
+            ) : (!isDirectBooking && cartItems && cartItems.length > 0) ? (
+              <div className="flex flex-col gap-4">
+                {cartItems.map((item, index) => (
+                  <div key={item._id} className="border-b border-[#34658C]">
+                    <div
+                      className="flex justify-between my-6 cursor-pointer"
+                      onClick={() => toggleAccordion(index)}
+                    >
+                      <h1 className="text-[#34658C] text-[16px] tracking-[0.32px] md:text-[20px] md:tracking-[0.4px] font-medium">
+                        {item.equipmentName || item.serviceName}
+                      </h1>
+                      <div className="flex gap-3">
+                        <p className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                          ({item.cartquantity || 1})
+                        </p>
+                        {openIndex === index ? (
+                          <IoMdArrowDropdown className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#3D3D3D]" />
+                        ) : (
+                          <IoMdArrowDropup className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#3D3D3D]" />
+                        )}
+                      </div>
+                    </div>
+
+                    {openIndex === index && (
+                      <div className="my-6 flex flex-col gap-2 text-[12px] leading-[22px] tracking-[0.48px] md:text-[14px] leading-[26px] tracking-[0.48px]">
+                        <p className="flex justify-between">
+                          <span className="font-bold">Rental Cost:</span>
+                          <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                            ₹{item.productprice}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span className="font-bold">Rental Duration:</span>
+                          <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                            {item.rentalValue} {formatRentalDuration(item.rentalDuration)}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span className="font-bold">Tax ({item.producttaxpercentage}%):</span>
+                          <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                            ₹{((item.productprice || 0) * (item.producttaxpercentage || 0) * (item.cartquantity || 1) / 100).toFixed(2)}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span className="font-bold">Shipping:</span>
+                          <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                            ₹{((item.productshippingcost || 0) * (item.cartquantity || 1)).toFixed(2)}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span className="font-bold">
+                            Refundable Security Deposit:
+                          </span>
+                          <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                            ₹{((item.refundableSecurityDep || 0) * (item.cartquantity || 1)).toFixed(2)}
+                          </span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-4 text-gray-500">

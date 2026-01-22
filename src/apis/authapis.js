@@ -277,3 +277,39 @@ export const verifyPaymentApi = (paymentData) => {
 export const getBookingDetailsApi = (bookingId) => {
   return axiosInstance.get(`/user/booking/${bookingId}`);
 };
+
+// ==================
+// 33. ADD TO CART API
+// ==================
+export const addToCartApi = (cartData) => {
+  return axiosInstance.post('/cart/add', cartData);
+};
+
+// ==================
+// 34. GET USER CART
+// ==================
+export const getUserCartApi = () => {
+  return axiosInstance.get('/cart/user');
+};
+
+// ==================
+// 35. UPDATE CART ITEM
+// ==================
+export const updateCartApi = (cartId, updateData) => {
+  return axiosInstance.put(`/cart/update/${cartId}`, updateData);
+};
+
+// ==================
+// 36. DELETE CART ITEM (Remove single item)
+// ==================
+export const deleteCartApi = (cartId) => {
+  return axiosInstance.delete(`/cart/remove/${cartId}`);
+};
+
+// ==================
+// 37. CART CHECKOUT / BOOKING API
+// Handles payload: { selectedItems: [], paymentMode: "", addressId: "" }
+// ==================
+export const cartBookingApi = (bookingData) => {
+  return axiosInstance.post('/user/booking/create', bookingData);
+};

@@ -47,18 +47,18 @@ const Thankyou = () => {
     };
 
     const formatDate = (dateString) => {
-      if (!dateString) return "N/A";
+        if (!dateString) return "N/A";
 
-      const date = new Date(dateString);
+        const date = new Date(dateString);
 
-      return date.toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true, // AM/PM format
-      });
+        return date.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true, // AM/PM format
+        });
     };
 
 
@@ -223,7 +223,7 @@ const Thankyou = () => {
                                     </p>
                                     <p className="font-semibold">
                                         Rental Duration:{" "}
-                                        <span className="font-normal">{formatDate(rentalPeriod?.start)} - {formatDate(rentalPeriod?.end)}</span>
+                                        <span className="font-normal">{formatDate(product.startDate)} - {formatDate(product.endDate)}</span>
                                     </p>
                                     <p className="font-semibold">
                                         Security Deposit:{" "}
@@ -277,7 +277,7 @@ const Thankyou = () => {
                                         <p className="flex justify-between">
                                             <span className="font-bold">Rental Duration:</span>
                                             <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                                                {formatDate(rentalPeriod?.start)} - {formatDate(rentalPeriod?.end)}
+                                                {formatDate(product.startDate)} - {formatDate(product.endDate)}
                                             </span>
                                         </p>
                                         <p className="flex justify-between">

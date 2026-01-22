@@ -4,7 +4,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { IoCheckmarkSharp } from "react-icons/io5";
 import { toast } from "react-toastify";
 import Stepper from "../commonComponents/Stepper";
-import { buyNowApi, createBookingApi, verifyPaymentApi } from "../../apis/authapis";
+import { buyNowApi, cartBookingApi, verifyPaymentApi } from "../../apis/authapis";
 
 const Payment = () => {
   const location = useLocation();
@@ -38,7 +38,6 @@ const Payment = () => {
         return;
       }
 
-      // Check if script tag already exists
       const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
       if (existingScript) {
         console.log("⏳ Razorpay script tag exists, waiting for load...");
@@ -67,6 +66,53 @@ const Payment = () => {
       };
       document.body.appendChild(script);
     });
+  };
+
+  const handleBookingError = (error) => {
+    console.error("❌ Payment Error:", error);
+    console.error("❌ Error Details:", {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
+
+    const errorMessage = error.response?.data?.message
+      || error.response?.data?.error
+      || error.message
+      || "Payment initiation failed";
+
+    // Handle "Past Dates" error specifically
+    if (errorMessage === "Cannot book items with past dates. Please update your cart." ||
+      errorMessage.toLowerCase().includes("past date") ||
+      errorMessage.toLowerCase().includes("cannot book items with past dates")) {
+
+      if (isDirectBooking) {
+        toast.error("The selected date is in the past. Redirecting to update your booking date...", {
+          autoClose: 2000
+        });
+
+        // Delay redirect slightly to let user see the toast
+        setTimeout(() => {
+          if (bookingData.productType === 'services' || bookingData.productType === 'service') {
+            navigate(`/nurse-detail/${bookingData.productId}`);
+          } else {
+            navigate(`/equipment/${bookingData.productId}`);
+          }
+        }, 1500);
+      } else {
+        toast.error("One or more items in your cart have past dates. Redirecting to cart to update...", {
+          autoClose: 2000
+        });
+
+        // Delay redirect slightly to let user see the toast
+        setTimeout(() => {
+          navigate('/cart');
+        }, 1500);
+      }
+      return;
+    }
+
+    toast.error(errorMessage);
   };
 
   // Handle Online Payment (Razorpay)
@@ -103,22 +149,11 @@ const Payment = () => {
         console.log("📤 Buy Now Payload:", buyNowPayload);
         console.log("💰 Order Summary:", orderSummary);
 
-        try {
-          response = await buyNowApi(buyNowPayload);
-          console.log("✅ Backend Response:", response);
-        } catch (apiError) {
-          console.error("❌ Backend API Error:", apiError);
-          console.error("❌ Error Response:", apiError.response?.data);
+        console.log("📤 Buy Now Payload:", buyNowPayload);
+        console.log("💰 Order Summary:", orderSummary);
 
-          // Show the actual backend error message
-          const errorMessage = apiError.response?.data?.message
-            || apiError.response?.data?.error
-            || "Failed to create order. Please check backend logs.";
-
-          toast.error(errorMessage);
-          setProcessing(false);
-          return;
-        }
+        response = await buyNowApi(buyNowPayload);
+        console.log("✅ Backend Response:", response);
       }
       // CART BOOKING
       else {
@@ -129,21 +164,7 @@ const Payment = () => {
         };
 
         console.log("📤 Cart Booking Payload:", cartPayload);
-
-        try {
-          response = await createBookingApi(cartPayload);
-        } catch (apiError) {
-          console.error("❌ Backend API Error:", apiError);
-          console.error("❌ Error Response:", apiError.response?.data);
-
-          const errorMessage = apiError.response?.data?.message
-            || apiError.response?.data?.error
-            || "Failed to create order. Please check backend logs.";
-
-          toast.error(errorMessage);
-          setProcessing(false);
-          return;
-        }
+        response = await cartBookingApi(cartPayload);
       }
 
       console.log("✅ Razorpay Order Response:", response.data);
@@ -251,19 +272,7 @@ const Payment = () => {
         return;
       }
     } catch (error) {
-      console.error("❌ Payment Error:", error);
-      console.error("❌ Error Details:", {
-        message: error.message,
-        response: error.response?.data,
-        stack: error.stack
-      });
-
-      const errorMessage = error.response?.data?.message
-        || error.response?.data?.error
-        || error.message
-        || "Payment initiation failed";
-
-      toast.error(errorMessage);
+      handleBookingError(error);
       setProcessing(false);
     }
   };
@@ -293,6 +302,7 @@ const Payment = () => {
         verifyPayload.amount = amount;
       } else {
         verifyPayload.selectedItems = bookingData.selectedCartIds || [];
+        verifyPayload.amount = amount; // Add amount for cart bookings
       }
 
       console.log("📤 Verify Payment Payload:", verifyPayload);
@@ -377,7 +387,7 @@ const Payment = () => {
         };
 
         console.log("📤 COD Cart Booking Payload:", cartPayload);
-        response = await createBookingApi(cartPayload);
+        response = await cartBookingApi(cartPayload);
       }
 
       console.log("✅ COD Booking Response:", response.data);
@@ -390,12 +400,9 @@ const Payment = () => {
             paymentMode: "COD",
           },
         });
-      } else {
-        toast.error(response.data.message || "Booking failed");
       }
     } catch (error) {
-      console.error("❌ COD Booking Error:", error);
-      toast.error(error.response?.data?.message || "COD booking failed");
+      handleBookingError(error);
     } finally {
       setProcessing(false);
     }
@@ -552,7 +559,7 @@ const Payment = () => {
               Order Summary
             </h1>
 
-            {isDirectBooking && (
+            {isDirectBooking ? (
               <div className="flex flex-col gap-2 text-[14px] md:text-[16px]">
                 <p className="font-semibold">{orderSummary.productName}</p>
                 <div className="flex justify-between">
@@ -583,6 +590,39 @@ const Payment = () => {
                 <div className="flex justify-between font-bold text-[16px] md:text-[20px] text-[#34658C]">
                   <span>Total:</span>
                   <span>₹{orderSummary.totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 text-[14px] md:text-[16px]">
+                <p className="font-semibold">Cart Items ({orderSummary.itemCount || 0})</p>
+                <div className="flex justify-between">
+                  <span>Base Amount:</span>
+                  <span>₹{(orderSummary.baseAmount || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span>₹{(orderSummary.taxAmount || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span>₹{(orderSummary.shippingCost || 0).toFixed(2)}</span>
+                </div>
+                {(orderSummary.securityDeposit || 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span>Security Deposit:</span>
+                    <span>₹{(orderSummary.securityDeposit || 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {appliedCoupon && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({appliedCoupon.code}):</span>
+                    <span>-₹{appliedCoupon.discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <hr className="my-2" />
+                <div className="flex justify-between font-bold text-[16px] md:text-[20px] text-[#34658C]">
+                  <span>Total:</span>
+                  <span>₹{(orderSummary.totalAmount || 0).toFixed(2)}</span>
                 </div>
               </div>
             )}
