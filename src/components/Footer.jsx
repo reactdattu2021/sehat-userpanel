@@ -1,7 +1,56 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getAllEquipmentsApi, getAllNursesApi } from "../apis/authapis";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const [equipments, setEquipments] = useState([]);
+  const [nurses, setNurses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFooterData = async () => {
+      try {
+        // Fetch top 5 equipments
+        const equipmentResponse = await getAllEquipmentsApi(1, 5);
+        console.log("Equipment API Response:", equipmentResponse);
+        if (equipmentResponse.data.success) {
+          console.log("Equipment Data:", equipmentResponse.data.data);
+          setEquipments(equipmentResponse.data.data || []);
+        }
+
+        // Fetch top 5 nurse services
+        const nurseResponse = await getAllNursesApi(1, 5);
+        console.log("Nurse API Response:", nurseResponse);
+        if (nurseResponse.data.success) {
+          console.log("Nurse Data:", nurseResponse.data.data);
+          setNurses(nurseResponse.data.data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching footer data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFooterData();
+  }, []);
+
+  // Log state changes for debugging
+  useEffect(() => {
+    console.log("Footer State - Equipments:", equipments);
+    console.log("Footer State - Nurses:", nurses);
+    console.log("Footer State - Loading:", loading);
+  }, [equipments, nurses, loading]);
+
+  const handleEquipmentClick = (equipmentId) => {
+    navigate(`/equipment/${equipmentId}`);
+  };
+
+  const handleNurseClick = (nurseId) => {
+    navigate(`/nurse-detail/${nurseId}`);
+  };
+
   return (
     <div className="bg-[#34658C]">
       <div className="max-w-[1440px] mx-auto px-5 py-[40px] md:px-[32px] xl:px-[120px] md:py-[60px] text-white">
@@ -10,7 +59,8 @@ const Footer = () => {
             <img
               src="/assets/FooterImages/footerLogo.png"
               alt="footer-Logo"
-              className="w-[140px] h-[106px] md:w-[175px] md:h-[132px]"
+              className="w-[140px] h-[106px] md:w-[175px] md:h-[132px] cursor-pointer"
+              onClick={() => navigate("/")}
             />
             <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold">
               Your trusted health partner, connecting you with nearby medical
@@ -51,7 +101,7 @@ const Footer = () => {
               <Link to="/about">
                 <p>About Us</p>
               </Link>
-              <Link to="/services">
+              <Link to="/contact">
                 <p>Contact Us</p>
               </Link>
               <Link to="/book-nurse">
@@ -68,11 +118,29 @@ const Footer = () => {
               Rent Products
             </h1>
             <div className="flex flex-col  gap-3 text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
-              <p>Oxygen Concentrators</p>
-              <p>Patient Monitors</p>
-              <p>Wheelchairs</p>
-              <p>Medical Beds</p>
-              <p>View All Products</p>
+              {loading ? (
+                <p>Loading...</p>
+              ) : equipments.length > 0 ? (
+                <>
+                  {equipments.map((equipment) => (
+                    <p
+                      key={equipment._id}
+                      onClick={() => handleEquipmentClick(equipment._id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {equipment.equipmentName}
+                    </p>
+                  ))}
+                  <p
+                    onClick={() => navigate("/equipments")}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    View All Products
+                  </p>
+                </>
+              ) : (
+                <p>No products available</p>
+              )}
             </div>
           </div>
           <div className=" col-span-12 xl:col-span-3 flex flex-col gap-5">
@@ -80,11 +148,29 @@ const Footer = () => {
               Book Nurse Service
             </h1>
             <div className="flex flex-col gap-3 text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
-              <p>Elderly Care</p>
-              <p>ICU Trained Nurse</p>
-              <p>Physiotherapy Support</p>
-              <p>Post-Surgery Care</p>
-              <p>View All Services</p>
+              {loading ? (
+                <p>Loading...</p>
+              ) : nurses.length > 0 ? (
+                <>
+                  {nurses.map((nurse) => (
+                    <p
+                      key={nurse._id}
+                      onClick={() => handleNurseClick(nurse._id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {nurse.fullName}
+                    </p>
+                  ))}
+                  <p
+                    onClick={() => navigate("/book-nurse")}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    View All Services
+                  </p>
+                </>
+              ) : (
+                <p>No services available</p>
+              )}
             </div>
           </div>
         </div>

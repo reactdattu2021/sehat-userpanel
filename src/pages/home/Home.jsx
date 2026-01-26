@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
+import AddToCartModal from "../../components/AddToCartModal";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import "swiper/css/effect-fade";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
+import { subscribeApi } from "../../apis/authapis";
+import { toast } from "react-toastify";
 import {
   Slides,
   TopHealthServices,
@@ -32,6 +35,10 @@ const Home = () => {
   const [equipments, setEquipments] = useState([]);
   const [loadingEquipments, setLoadingEquipments] = useState(true);
   const [equipmentError, setEquipmentError] = useState(null);
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [subscribeEmail, setSubscribeEmail] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   const lastIndex = TopHealthServices.length - slidesPerView;
   const lastIndexReview = ReviewsData.length - slidesPerView;
@@ -90,7 +97,9 @@ const Home = () => {
 
         // Handle 401 errors gracefully - don't show error, just hide the section
         if (error.response?.status === 401) {
-          console.log("⚠️ Equipment endpoint requires authentication - hiding section");
+          console.log(
+            "⚠️ Equipment endpoint requires authentication - hiding section",
+          );
           setEquipments([]); // Set empty array to hide the section
           setEquipmentError(null); // Don't show error message
         } else {
@@ -103,6 +112,38 @@ const Home = () => {
 
     fetchEquipments();
   }, []);
+
+  const handleSubscribe = async () => {
+    if (!subscribeEmail.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(subscribeEmail)) {
+      toast.error("Please enter a valid email");
+      return;
+    }
+
+    try {
+      const res = await subscribeApi(subscribeEmail);
+
+      if (res?.data?.success) {
+        toast.success("Subscribed successfully 🎉");
+        setIsSubscribed(true);
+      }
+      // ✅ HANDLE ALREADY SUBSCRIBED
+      else if (res?.data?.statuscode === 409) {
+        toast.info(res.data.message);
+        setIsSubscribed(true);
+      } else {
+        toast.error(res?.data?.message || "Subscription failed");
+      }
+    } catch (error) {
+      console.error("Subscribe error:", error);
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
+  };
 
   return (
     <div className="space-y-[60px] md:space-y-[80px] xl:space-y-[120px]">
@@ -378,7 +419,10 @@ const Home = () => {
                               <div className="flex gap-2 mt-[6px]">
                                 <button
                                   className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
-                                  onClick={() => navigate('/cart')}
+                                  onClick={() => {
+                                    setSelectedEquipment(data);
+                                    setIsModalOpen(true);
+                                  }}
                                 >
                                   Add To Cart
                                 </button>
@@ -617,7 +661,7 @@ const Home = () => {
                             key={i}
                             className="text-[16px] md:text-[24px] text-[#ED3237]"
                           />
-                        )
+                        ),
                       )}
                     </div>
                     <div className="flex gap-3 mt-3">
@@ -696,12 +740,19 @@ const Home = () => {
               </div>
               <div className="flex flex-col md:flex-row gap-3 justify-center">
                 <input
-                  type="text"
+                  type="email"
                   placeholder="Enter your Email Address"
-                  className="font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  border-[1px] border-[#FFFFFF] w-full md:w-[386px] bg-transparent px-6 py-3 rounded-[16px]"
+                  value={subscribeEmail}
+                  disabled={isSubscribed}
+                  onChange={(e) => setSubscribeEmail(e.target.value)}
+                  className="font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  border-[1px] border-[#FFFFFF] w-full md:w-[386px] bg-transparent px-6 py-3 rounded-[16px] disabled:opacity-60 "
                 />
-                <button className="bg-[#FFFFFF] font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-[#34658C] px-6 py-3 rounded-[16px] w-full md:w-fit">
-                  Subscribe
+                <button
+                  onClick={handleSubscribe}
+                  disabled={isSubscribed}
+                  className="bg-[#FFFFFF] font-semibold text-[14px] md:text-[16px] text-[#34658C] px-6 py-3 rounded-[16px] disabled:opacity-60"
+                >
+                  {isSubscribed ? "Subscribed ✓" : "Subscribe"}
                 </button>
               </div>
             </div>
@@ -730,6 +781,17 @@ const Home = () => {
           ))}
         </div>
       </div>
+      {isModalOpen && (
+        <AddToCartModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedEquipment(null);
+          }}
+          itemData={selectedEquipment}
+          itemType="equipment"
+        />
+      )}
     </div>
   );
 };

@@ -4,6 +4,8 @@ import { FaMinus, FaPlus } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import { getEquipmentByIdApi } from "../../apis/authapis";
 import AddToCartModal from "../../components/AddToCartModal";
+import ReviewModal from "../../pages/reviewComponents/ReviewModal";
+import Reviews from "../../pages/reviewComponents/Reviews.jsx";
 
 const EquipmentDetail = () => {
   const { equipmentId } = useParams();
@@ -11,6 +13,7 @@ const EquipmentDetail = () => {
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Equipment data state
   const [equipment, setEquipment] = useState(null);
@@ -194,11 +197,10 @@ const EquipmentDetail = () => {
                   key={index}
                   src={img}
                   alt="equipmentPics"
-                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${
-                    selectedImg === img
-                      ? "border-[#000000]"
-                      : "border-transparent"
-                  }`}
+                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${selectedImg === img
+                    ? "border-[#000000]"
+                    : "border-transparent"
+                    }`}
                   style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
                   onClick={() => setSelectedImg(img)}
                 />
@@ -459,6 +461,16 @@ const EquipmentDetail = () => {
             </h1>
           </div>
         </div>
+        <div className="bg-white">
+          <div className="max-w-1440 xl:px-[80px] md:px-[32px] px-[16px] py-[50px]">
+            <Reviews
+              productId={equipmentId}
+              productType="equipment"
+              onWriteReview={() => setIsReviewModalOpen(true)}
+            />
+          </div>
+        </div>
+
       </div>
 
       {/* Add To Cart Modal */}
@@ -467,6 +479,14 @@ const EquipmentDetail = () => {
         onClose={() => setIsModalOpen(false)}
         itemData={equipment}
         itemType="equipment"
+      />
+
+      {/* Review Modal */}
+      <ReviewModal
+        productId={equipmentId}
+        productType="equipment"
+        open={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
       />
     </>
   );

@@ -6,6 +6,9 @@ import { IoMdFemale, IoMdMale } from "react-icons/io";
 import { toast } from "react-toastify";
 import { getNurseByIdApi } from "../../apis/authapis";
 import AddToCartModal from "../../components/AddToCartModal";
+import ReviewModal from "../../pages/reviewComponents/ReviewModal"
+import Reviews from "../../pages/reviewComponents/Reviews.jsx";
+
 
 const NurseDetail = () => {
   const { nurseId } = useParams();
@@ -13,6 +16,7 @@ const NurseDetail = () => {
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Nurse data state
   const [nurse, setNurse] = useState(null);
@@ -570,6 +574,17 @@ const NurseDetail = () => {
             </h1>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <div className="bg-white">
+          <div className="max-w-1440 xl:px-[80px] md:px-[32px] px-[16px] py-[50px]">
+            <Reviews
+              productId={nurseId}
+              productType="service"
+              onWriteReview={() => setIsReviewModalOpen(true)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Add To Cart Modal */}
@@ -578,6 +593,14 @@ const NurseDetail = () => {
         onClose={() => setIsModalOpen(false)}
         itemData={nurse}
         itemType="service"
+      />
+
+      {/* Review Modal */}
+      <ReviewModal
+        productId={nurseId}
+        productType="service"
+        open={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
       />
     </>
   );
