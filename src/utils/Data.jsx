@@ -255,192 +255,215 @@ export const ContactInfo = [
   },
 ];
 
-export const BlogData=[
-  {id:1,
-    image:"/assets/BlogImages/image1.png",
-    category:"Diabetes",
-    title:"Why Regular Sugar Checkups  Matter",
-    description:"Monitoring your sugar levels can prevent long-term complications…",
+export const BlogData = [
+  {
+    id: 1,
+    image: "/assets/BlogImages/image1.png",
+    category: "Diabetes",
+    title: "Why Regular Sugar Checkups  Matter",
+    description: "Monitoring your sugar levels can prevent long-term complications…",
   },
-   {id:2,
-    image:"/assets/BlogImages/image2.png",
-    category:"Health Tips",
-    title:"Simple Ways to Control Your BP",
-    description:"Small lifestyle adjustments can help you manage blood pressure naturally…",
+  {
+    id: 2,
+    image: "/assets/BlogImages/image2.png",
+    category: "Health Tips",
+    title: "Simple Ways to Control Your BP",
+    description: "Small lifestyle adjustments can help you manage blood pressure naturally…",
   },
-   {id:3,
-    image:"/assets/BlogImages/image3.png",
-    category:"Home Care",
-    title:"Benefits of Home Nursing Care",
-    description:"From comfort to convenience — discover why home care is growing…",
+  {
+    id: 3,
+    image: "/assets/BlogImages/image3.png",
+    category: "Home Care",
+    title: "Benefits of Home Nursing Care",
+    description: "From comfort to convenience — discover why home care is growing…",
   },
-   {id:4,
-    image:"/assets/BlogImages/image4.png",
-    category:"Wellness",
-    title:"5 Daily Habits for a Healthy Lifestyle",
-    description:"Improve your overall wellbeing with these simple, consistent routines…",
+  {
+    id: 4,
+    image: "/assets/BlogImages/image4.png",
+    category: "Wellness",
+    title: "5 Daily Habits for a Healthy Lifestyle",
+    description: "Improve your overall wellbeing with these simple, consistent routines…",
   },
-   {id:5,
-    image:"/assets/BlogImages/image5.png",
-    category:"Health Tips",
-    title:"Understanding Thyroid Imbalance",
-    description:"Common symptoms, causes, and simple test options for thyroid issues…",
+  {
+    id: 5,
+    image: "/assets/BlogImages/image5.png",
+    category: "Health Tips",
+    title: "Understanding Thyroid Imbalance",
+    description: "Common symptoms, causes, and simple test options for thyroid issues…",
   },
-   {id:6,
-    image:"/assets/BlogImages/image6.png",
-    category:"Home Care",
-    title:"How to Choose the Right Health...",
-    description:"Quick guide to comparing clinics, labs, and home care providers…",
-  },
-]
-
-export const Equipments=[
-  {id:1,
-    image:"/assets/EquipmentImages/doctor img (6).png",
-    name:"Phototherapy UV Machine",
-    description:"Reliable oxygen therapy device suitable for home use.",
-    price:"₹599/day | ₹3,499/week"
-  },
-  {id:2,
-    image:"/assets/EquipmentImages/doctor img (7).png",
-    name:"BiPAP Machine",
-    description:"Non-invasive ventilator support for sleep & breathing disorders.",
-    price:"₹599/day | ₹3,499/week"
-  },
-  {id:3,
-    image:"/assets/EquipmentImages/doctor img (8).png",
-    name:"Nidek Nuvo Lite 5 LPM",
-    description:"Reliable oxygen therapy device suitable for home use.",
-    price:"₹599/day | ₹3,499/week"
-  },
-  {id:4,
-    image:"/assets/EquipmentImages/doctor img (9).png",
-    name:"Manual Wheel Chair",
-    description:"Reliable oxygen therapy device suitable for home use.",
-    price:"₹599/day | ₹3,499/week"
+  {
+    id: 6,
+    image: "/assets/BlogImages/image6.png",
+    category: "Home Care",
+    title: "How to Choose the Right Health...",
+    description: "Quick guide to comparing clinics, labs, and home care providers…",
   },
 ]
 
-
-export const Professionals=[
-  {id:1,
-    image:"/assets/BookANurseImages/doctor img (10).png",
-    name:"Nurse Priya R",
-    specialist:"GNM — Senior Home Care Nurse",
-    experience:"3 + Years of Experience",
-    price:"₹599/day | ₹3,499/week"
+export const Equipments = [
+  {
+    id: 1,
+    image: "/assets/EquipmentImages/doctor img (6).png",
+    name: "Phototherapy UV Machine",
+    description: "Reliable oxygen therapy device suitable for home use.",
+    price: "₹599/day | ₹3,499/week"
   },
-  {id:2,
-    image:"/assets/BookANurseImages/doctor img (11).png",
-    name:"Nurse Kavitha S",
-    specialist:"Newborn & Baby Care",
-    experience:"5 + Years of Experience",
-    price:"₹599/day | ₹3,499/week"
+  {
+    id: 2,
+    image: "/assets/EquipmentImages/doctor img (7).png",
+    name: "BiPAP Machine",
+    description: "Non-invasive ventilator support for sleep & breathing disorders.",
+    price: "₹599/day | ₹3,499/week"
   },
-  {id:3,
-    image:"/assets/BookANurseImages/doctor img (12).png",
-    name:"Durga Prasad k",
-    specialist:"GNM — Senior Home Care Nurse",
-    experience:"3 + Years of Experience",
-    price:"₹599/day | ₹3,499/week"
+  {
+    id: 3,
+    image: "/assets/EquipmentImages/doctor img (8).png",
+    name: "Nidek Nuvo Lite 5 LPM",
+    description: "Reliable oxygen therapy device suitable for home use.",
+    price: "₹599/day | ₹3,499/week"
   },
-  {id:4,
-    image:"/assets/BookANurseImages/doctor img (13).png",
-    name:"Praveen M",
-    specialist:"Newborn & Baby Care",
-    experience:"5 + Years of Experience",
-    price:"₹599/day | ₹3,499/week"
-  },
- 
-]
-
-export const Products=[
-  {id:1,
-    image:"/assets/cartImages/doctor img (14).png",
-    name:"Phototherapy UV Machine",
-    duration:" 7 Day",
-    date:" Sun 30-Nov-2025",
-    quantity:"1"
-  },
-    {id:2,
-    image:"/assets/cartImages/doctor img (15).png",
-    name:"BiPAP Machine",
-    duration:" 7 Day",
-    date:" Sun 30-Nov-2025",
-    quantity:"1"
+  {
+    id: 4,
+    image: "/assets/EquipmentImages/doctor img (9).png",
+    name: "Manual Wheel Chair",
+    description: "Reliable oxygen therapy device suitable for home use.",
+    price: "₹599/day | ₹3,499/week"
   },
 ]
 
-export const Services =[
-  {id:1,
-    image:"/assets/cartImages/doctor img (16).png",
-    name:"Nurse Priya R",
-   duration:" 7 Day",
-    date:" Sun 30-Nov-2025",
-    time:"(8AM - 12PM)"
+
+export const Professionals = [
+  {
+    id: 1,
+    image: "/assets/BookANurseImages/doctor img (10).png",
+    name: "Nurse Priya R",
+    specialist: "GNM — Senior Home Care Nurse",
+    experience: "3 + Years of Experience",
+    price: "₹599/day | ₹3,499/week"
+  },
+  {
+    id: 2,
+    image: "/assets/BookANurseImages/doctor img (11).png",
+    name: "Nurse Kavitha S",
+    specialist: "Newborn & Baby Care",
+    experience: "5 + Years of Experience",
+    price: "₹599/day | ₹3,499/week"
+  },
+  {
+    id: 3,
+    image: "/assets/BookANurseImages/doctor img (12).png",
+    name: "Durga Prasad k",
+    specialist: "GNM — Senior Home Care Nurse",
+    experience: "3 + Years of Experience",
+    price: "₹599/day | ₹3,499/week"
+  },
+  {
+    id: 4,
+    image: "/assets/BookANurseImages/doctor img (13).png",
+    name: "Praveen M",
+    specialist: "Newborn & Baby Care",
+    experience: "5 + Years of Experience",
+    price: "₹599/day | ₹3,499/week"
+  },
+
+]
+
+export const Products = [
+  {
+    id: 1,
+    image: "/assets/cartImages/doctor img (14).png",
+    name: "Phototherapy UV Machine",
+    duration: " 7 Day",
+    date: " Sun 30-Nov-2025",
+    quantity: "1"
+  },
+  {
+    id: 2,
+    image: "/assets/cartImages/doctor img (15).png",
+    name: "BiPAP Machine",
+    duration: " 7 Day",
+    date: " Sun 30-Nov-2025",
+    quantity: "1"
+  },
+]
+
+export const Services = [
+  {
+    id: 1,
+    image: "/assets/cartImages/doctor img (16).png",
+    name: "Nurse Priya R",
+    duration: " 7 Day",
+    date: " Sun 30-Nov-2025",
+    time: "(8AM - 12PM)"
   }
 ]
 
-export const Summary=[
-  {id:1,
-    name:"Phototherapy UV Machine",
-    quantity:"1",
-    cost:"₹1,390.00/Day",
-    duration:"7 Days",
-    tax:"₹90.00",
-    shipping:"₹500.00",
-    deposit:"₹0.00"
+export const Summary = [
+  {
+    id: 1,
+    name: "Phototherapy UV Machine",
+    quantity: "1",
+    cost: "₹1,390.00/Day",
+    duration: "7 Days",
+    tax: "₹90.00",
+    shipping: "₹500.00",
+    deposit: "₹0.00"
   },
-   {id:2,
-    name:"BiPAP Machine",
-    quantity:"2",
-    cost:"₹1,390.00/Day",
-    duration:"7 Days",
-    tax:"₹90.00",
-    shipping:"₹500.00",
-    deposit:"₹0.00"
+  {
+    id: 2,
+    name: "BiPAP Machine",
+    quantity: "2",
+    cost: "₹1,390.00/Day",
+    duration: "7 Days",
+    tax: "₹90.00",
+    shipping: "₹500.00",
+    deposit: "₹0.00"
   },
-   {id:3,
-    name:"Nurse Service",
-    quantity:"1",
-    cost:"₹1,390.00/Day",
-    duration:"7 Days",
-    tax:"₹90.00",
-    shipping:"₹500.00",
-    deposit:"₹0.00"
+  {
+    id: 3,
+    name: "Nurse Service",
+    quantity: "1",
+    cost: "₹1,390.00/Day",
+    duration: "7 Days",
+    tax: "₹90.00",
+    shipping: "₹500.00",
+    deposit: "₹0.00"
   },
 ]
 
-export const Orders=[
-  {id:1,
-    name:"Phototherapy UV Machine",
-   orderId:"SHC-SHP-002",
-   estDelivery:"30 Nov 2025",
-    image:"/assets/cartImages/doctor img (14).png",
-    cost:"  ₹1,390.00/Day",
-    duration:"7 days",
-    deposit:"0",
-    qty:"1"
+export const Orders = [
+  {
+    id: 1,
+    name: "Phototherapy UV Machine",
+    orderId: "SHC-SHP-002",
+    estDelivery: "30 Nov 2025",
+    image: "/assets/cartImages/doctor img (14).png",
+    cost: "  ₹1,390.00/Day",
+    duration: "7 days",
+    deposit: "0",
+    qty: "1"
   },
-  {id:2,
-    name:"BiPAP Machine",
-   orderId:"SHC-SHP-002",
-    estDelivery:"30 Nov 2025",
-       image:"/assets/cartImages/doctor img (15).png",
-    cost:"  ₹1,390.00/Day",
-    duration:"7 days",
-    deposit:"0",
-    qty:"1"
+  {
+    id: 2,
+    name: "BiPAP Machine",
+    orderId: "SHC-SHP-002",
+    estDelivery: "30 Nov 2025",
+    image: "/assets/cartImages/doctor img (15).png",
+    cost: "  ₹1,390.00/Day",
+    duration: "7 days",
+    deposit: "0",
+    qty: "1"
   },
-   {id:3,
-    name:"Phototherapy UV Machine",
-   orderId:"SHC-SHP-002",
-    estDelivery:"30 Nov 2025",
-     image:"/assets/cartImages/doctor img (16).png",
-    cost:"  ₹1,390.00/Day",
-    duration:"7 days",
-    deposit:"0",
-    qty:"1"
+  {
+    id: 3,
+    name: "Phototherapy UV Machine",
+    orderId: "SHC-SHP-002",
+    estDelivery: "30 Nov 2025",
+    image: "/assets/cartImages/doctor img (16).png",
+    cost: "  ₹1,390.00/Day",
+    duration: "7 days",
+    deposit: "0",
+    qty: "1"
   }
 ]
 

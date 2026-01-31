@@ -31,7 +31,13 @@ const CartPage = () => {
       try {
         const response = await getUserCartApi();
         if (response.data.success) {
-          setCartItems(response.data.data || []);
+          const items = response.data.data || [];
+          setCartItems(items);
+          // Select all items by default
+          setSelectedItems(items.map(item => item._id));
+          // Open first item accordion
+          setOpenIndex(0);
+          // Set total based on all items
           setTotalAmount(response.data.total || 0);
         }
       } catch (error) {
@@ -40,6 +46,14 @@ const CartPage = () => {
     };
     fetchCartData();
   }, []);
+
+  // Recalculate total when selected items change
+  useEffect(() => {
+    const selectedTotal = cartItems
+      .filter(item => selectedItems.includes(item._id))
+      .reduce((sum, item) => sum + (item.TotalAmount || 0), 0);
+    setTotalAmount(selectedTotal);
+  }, [selectedItems, cartItems]);
   const openEdit = (item) => {
     // Extract time from startDate for both equipment and services
     let startTime = '';
@@ -67,7 +81,14 @@ const CartPage = () => {
     if (qty < 1) return;
 
     try {
-      const res = await updateCartApi(cartId, { cartquantity: qty });
+      const item = cartItems.find(i => i._id === cartId);
+      if (!item) return;
+
+      const res = await updateCartApi(cartId, {
+        cartquantity: qty,
+        rentalDuration: item.rentalDuration,
+        rentalValue: item.rentalValue
+      });
 
       if (res.data.success) {
         const cartResponse = await getUserCartApi();
@@ -211,9 +232,9 @@ const CartPage = () => {
                           Rental Duration:{" "}
                           <span className="font-normal">
                             {data.rentalValue}{" "}
-                            {data.rentalDuration === "perDay"
+                            {data.rentalDuration?.toLowerCase() === "perday"
                               ? "Day(s)"
-                              : data.rentalDuration === "perWeek"
+                              : data.rentalDuration?.toLowerCase() === "perweek"
                                 ? "Week(s)"
                                 : "Month(s)"}
                           </span>
@@ -339,9 +360,9 @@ const CartPage = () => {
                           Rental Duration:{" "}
                           <span className="font-normal">
                             {data.rentalValue}{" "}
-                            {data.rentalDuration === "perHour"
+                            {data.rentalDuration?.toLowerCase() === "perhour"
                               ? "Hour(s)"
-                              : data.rentalDuration === "perDay"
+                              : data.rentalDuration?.toLowerCase() === "perday"
                                 ? "Day(s)"
                                 : "Week(s)"}
                           </span>
@@ -417,86 +438,86 @@ const CartPage = () => {
             <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] mb-6 font-medium">
               Rent Cost Summary
             </h1>
-            {cartItems.map((item, index) => (
-              <div key={item._id} className="border-b  border-[#34658C] ">
-                <div
-                  className="flex justify-between my-6"
-                  onClick={() => toggleAccordion(index)}
-                >
-                  <h1 className="text-[#34658C] text-[16px] tracking-[0.32px] md:text-[20px] md:tracking-[0.4px] font-medium">
-                    {item.equipmentName || item.serviceName}
-                  </h1>
-                  <div className="flex gap-3">
-                    <p className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                      ({item.cartquantity || 1})
-                    </p>
-                    {openIndex === index ? (
-                      <IoMdArrowDropdown className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#3D3D3D]" />
-                    ) : (
-                      <IoMdArrowDropup className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#3D3D3D]" />
-                    )}
+            {cartItems
+              .filter(item => selectedItems.includes(item._id))
+              .map((item, index) => (
+                <div key={item._id} className="border-b  border-[#34658C] ">
+                  <div
+                    className="flex justify-between my-6"
+                    onClick={() => toggleAccordion(index)}
+                  >
+                    <h1 className="text-[#34658C] text-[16px] tracking-[0.32px] md:text-[20px] md:tracking-[0.4px] font-medium">
+                      {item.equipmentName || item.serviceName}
+                    </h1>
+                    <div className="flex gap-3">
+                      <p className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                        ({item.cartquantity || 1})
+                      </p>
+                      {openIndex === index ? (
+                        <IoMdArrowDropdown className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#3D3D3D]" />
+                      ) : (
+                        <IoMdArrowDropup className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#3D3D3D]" />
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {openIndex === index && (
-                  <div className="my-6 flex flex-col gap-2 text-[12px] leading-[22px] tracking-[0.48px] md:text-[14px] leading-[26px] tracking-[0.48px]">
-                    <p className="flex justify-between">
-                      <span className="font-bold">Rental Cost:</span>
-                      <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                        ₹
-                        {item.productprice ||
-                          item.equipmentPrice ||
-                          item.servicePrice}
-                      </span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-bold">Rental Duration:</span>
-                      <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                        {item.rentalValue}{" "}
-                        {item.rentalDuration === "perDay"
-                          ? "Day(s)"
-                          : item.rentalDuration === "perHour"
-                            ? "Hour(s)"
-                            : item.rentalDuration === "perWeek"
-                              ? "Week(s)"
-                              : "Month(s)"}
-                      </span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-bold">Tax:</span>
-                      <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                        ₹
-                        {(
-                          ((item.productprice || 0) *
-                            (item.producttaxpercentage || 0)) /
-                          100
-                        ).toFixed(2)}
-                      </span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-bold">Shipping:</span>
-                      <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                        ₹{item.productshippingcost || 0}
-                      </span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-bold">
-                        Refundable Security Deposit:
-                      </span>
-                      <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                        ₹{item.refundableSecurityDep || 0}
-                      </span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+                  {openIndex === index && (
+                    <div className="my-6 flex flex-col gap-2 text-[12px] leading-[22px] tracking-[0.48px] md:text-[14px] leading-[26px] tracking-[0.48px]">
+                      <p className="flex justify-between">
+                        <span className="font-bold">Rental Cost:</span>
+                        <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                          ₹{item.equipmentPrice || item.servicePrice || 0}
+                        </span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="font-bold">Rental Duration:</span>
+                        <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                          {item.rentalValue}{" "}
+                          {item.rentalDuration?.toLowerCase() === "perday"
+                            ? "Day(s)"
+                            : item.rentalDuration?.toLowerCase() === "perhour"
+                              ? "Hour(s)"
+                              : item.rentalDuration?.toLowerCase() === "perweek"
+                                ? "Week(s)"
+                                : "Month(s)"}
+                        </span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="font-bold">Tax ({item.producttaxpercentage || 0}%):</span>
+                        <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                          ₹{(((item.equipmentPrice || item.servicePrice || 0) * (item.producttaxpercentage || 0)) / 100).toFixed(2)}
+                        </span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="font-bold">Shipping:</span>
+                        <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                          ₹{item.productshippingcost || 0}
+                        </span>
+                      </p>
+                      <p className="flex justify-between">
+                        <span className="font-bold">
+                          Refundable Security Deposit:
+                        </span>
+                        <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
+                          ₹{item.refundableSecurityDep || 0}
+                        </span>
+                      </p>
+                      <p className="flex justify-between border-t pt-2 mt-2">
+                        <span className="font-bold">Item Total:</span>
+                        <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px] font-bold">
+                          ₹{item.TotalAmount || 0}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
 
             <div className="py-3 flex flex-col gap-4 md:gap-6">
-              <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-medium font-outfit ">
+              {/* <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-medium font-outfit ">
                 Have a Coupons?{" "}
                 <span className="text-[#A2CD48]">Apply Here</span>
-              </p>
+              </p> */}
               <div className="flex justify-between font-outfit">
                 <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold">
                   Total Amount :

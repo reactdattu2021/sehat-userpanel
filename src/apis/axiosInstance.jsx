@@ -4,13 +4,40 @@ const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5002/Sehatmitra"
 })
 
-// ✅ AUTO-ATTACH JWT TOKEN
+// ✅ AUTO-ATTACH JWT TOKEN (Only for protected routes)
 axiosInstance.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        // List of public endpoints that don't need authentication
+        const publicEndpoints = [
+            '/user/getallequipment',
+            '/user/getallservices',
+            '/user/getequipment/',
+            '/user/getservice/',
+            '/user/equipmentfilters',
+            '/user/servicefilters',
+            '/services/filterdata/dropdown',
+            '/services/globalsearch',
+            '/user/blogs/all',
+            '/user/blogs/',
+            '/reviews/single/',
+            '/user/search',
+            '/userAddress/contactus',
+            '/user/subscribe',
+        ];
+
+        // Check if the current request is to a public endpoint
+        const isPublicEndpoint = publicEndpoints.some(endpoint =>
+            config.url?.includes(endpoint)
+        );
+
+        // Only attach token if it's NOT a public endpoint
+        if (!isPublicEndpoint) {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
         }
+
         return config;
     },
     (error) => {

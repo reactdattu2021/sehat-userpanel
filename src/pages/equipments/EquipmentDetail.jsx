@@ -6,10 +6,12 @@ import { getEquipmentByIdApi } from "../../apis/authapis";
 import AddToCartModal from "../../components/AddToCartModal";
 import ReviewModal from "../../pages/reviewComponents/ReviewModal";
 import Reviews from "../../pages/reviewComponents/Reviews.jsx";
+import { useAuth } from "../../context/AuthContext";
 
 const EquipmentDetail = () => {
   const { equipmentId } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,11 +74,35 @@ const EquipmentDetail = () => {
 
   const calculateTotalRent = () => {
     if (!equipment) return 0;
-    const basePrice = equipment.pricings[rentalType];
-    return basePrice * quantity * days;
+
+    // MATCH BACKEND CALCULATION EXACTLY
+    // Backend: const baseAmount = unitPrice * qty * rentalValue;
+    const baseAmount = (equipment.pricings[rentalType] || 0) * quantity * days;
+
+    // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
+    const taxAmount = (baseAmount * (equipment.pricings.taxPercentage || 0)) / 100;
+
+    // Backend: const safeShipping = productType === "services" ? 0 : shippingCost;
+    // Backend: totalAmount includes (safeShipping * qty)
+    const safeShipping = equipment.pricings.shippingCost || 0;
+    const shippingCost = safeShipping * quantity;
+
+    // Backend: const securityDeposit = (pricingDoc.pricings.securityDeposit || 0) * qty;
+    const securityDeposit = (equipment.pricings.securityDeposit || 0) * quantity;
+
+    // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
+    const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
+
+    return totalAmount;
   };
 
   const handleRentNow = () => {
+    // Check authentication first
+    // if (!isAuthenticated) {
+    //   toast.error("Please login to rent equipment");
+    //   return;
+    // }
+
     // Validation
     if (!equipment) {
       toast.error("Equipment data not loaded");
@@ -218,6 +244,14 @@ const EquipmentDetail = () => {
               <h1 className="text-[24px] tracking-[0.48px] md:text-[36px] md:tracking-[0.72px] font-bold text-[#34658C]">
                 {equipment.equipmentName}
               </h1>
+              {/* Status from backend */}
+              {/* {equipment.status && (
+                <p className="text-[14px] md:text-[16px] font-semibold">
+                  Status: <span className={`capitalize ${equipment.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
+                    {equipment.status}
+                  </span>
+                </p>
+              )} */}
               <p className="text-[16px] text-gray-600">
                 {/* <span className="font-semibold">Brand:</span> {equipment.brand} |
                 <span className="font-semibold"> Model:</span> {equipment.model} */}

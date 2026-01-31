@@ -5,6 +5,8 @@ import { faqData } from '../../utils/Data';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi, globalSearchApi } from '../../apis/authapis';
 import AddToCartModal from '../../components/AddToCartModal';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const BookNurse = () => {
   const selectRef = useRef(null);
@@ -12,6 +14,7 @@ const BookNurse = () => {
   const lastSearchQuery = useRef(null); // Track last search query to prevent duplicates
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -263,183 +266,185 @@ const BookNurse = () => {
       </div>
 
       {/* Find Health Services Near You */}
-      <div className="w-full">
-        {/* Blue Section */}
-        <div className="bg-[#34658C]">
-          <div className="max-w-[1440px] mx-auto  px-5 md:px-[32px] xl:px-[120px] py-[60px] md:py-[80px] xl:py-[120px] flex flex-col items-center text-white">
-            <h1 className="text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] xl:tracking-[0.96px] leading-[100%] font-semibold text-center mb-2">
-              Find Health Services Near You
-            </h1>
+      {!searchQuery && (
+        <div className="w-full">
+          {/* Blue Section */}
+          <div className="bg-[#34658C]">
+            <div className="max-w-[1440px] mx-auto  px-5 md:px-[32px] xl:px-[120px] py-[60px] md:py-[80px] xl:py-[120px] flex flex-col items-center text-white">
+              <h1 className="text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] xl:tracking-[0.96px] leading-[100%] font-semibold text-center mb-2">
+                Find Health Services Near You
+              </h1>
 
-            <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center  mb-[44px]">
-              Choose a home care category and instantly view verified nurses available in your area — book hourly, daily, or full-time nursing care right at your doorstep.
-            </p>
-          </div>
-        </div>
-
-        {/* White Search Box*/}
-        <div className="max-w-[300px] md:max-w-[704px] xl:max-w-[1280px] mx-auto w-full bg-white rounded-[12px] shadow-md -mt-[100px] p-[20px] md:p-[24px] xl:p-[32px] font-outfit">
-          <div className="flex flex-col gap-3  ">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-              <div className="col-span-12 md:col-span-4 xl:col-span-5">
-                <div className="relative">
-                  <select
-                    ref={selectRef}
-                    value={filters.subCategory}
-                    onChange={(e) => handleFilterChange('subCategory', e.target.value)}
-                    className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
-                  >
-                    <option value="">Select Nurse Category</option>
-                    {dropdownData.serviceSubCategories.length > 0 ? (
-                      dropdownData.serviceSubCategories.map((service, index) => (
-                        <option key={index} value={service}>
-                          {service}
-                        </option>
-                      ))
-                    ) : (
-                      // Fallback static options if API data is not available
-                      <>
-                        <option value="elderlycarenurse">Elderly Care Nurse</option>
-                        <option value="postsurgerycare">Post-Surgery Care</option>
-                        <option value="bedriddencare">Bedridden Care</option>
-                        <option value="cardiologist">Cardiologist</option>
-                        <option value="cardiacnurse">Cardiac Nurse</option>
-                      </>
-                    )}
-                  </select>
-                  <MdKeyboardArrowDown
-                    className="absolute right-3 top-1/2 w-[20px] h-[20px] -translate-y-1/2"
-                    onClick={() =>
-                      selectRef.current.focus() || selectRef.current?.click()
-                    }
-                  />
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-4 xl:col-span-5">
-                <input
-                  value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
-                  className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] border-[#3D3D3D] rounded-[8px] w-full p-3 placeholder:text-[#3D3D3D] "
-                  placeholder="Enter Your Location"
-                />
-              </div>
-              <div className="col-span-12 md:col-span-4 xl:col-span-2">
-                <div>
-                  <button className="bg-[#A2CD48] text-white p-3 rounded-[12px] flex gap-2 items-center md:w-full">
-                    <MdOutlineMyLocation className="text-white w-[22px] h-[22px]" />
-                    <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold">
-                      Use My Location
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center  mb-[44px]">
+                Choose a home care category and instantly view verified nurses available in your area — book hourly, daily, or full-time nursing care right at your doorstep.
+              </p>
             </div>
-            <div className="grid grid-cols-12 md:grid-cols-12 gap-3">
-              <div className="col-span-12 md:col-span-4">
-                <div className="relative">
-                  {/* Custom Styled UI */}
-                  <div
-                    className="flex items-center justify-between border border-[#3D3D3D] rounded-[8px] 
-                   w-full p-3 cursor-pointer"
-                    onClick={() => selectRef.current?.click()}
-                  >
-                    {/* Left: Show selected option dynamically */}
-                    <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold text-[#3D3D3D]">
-                      {selectedValue}
-                    </span>
+          </div>
 
-                    {/* Right: SortBy + Arrow */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold text-[#3D3D3D]">
-                        Sort By
-                      </span>
-                      <MdKeyboardArrowDown className="w-[20px] h-[20px]" />
-                    </div>
+          {/* White Search Box*/}
+          <div className="max-w-[300px] md:max-w-[704px] xl:max-w-[1280px] mx-auto w-full bg-white rounded-[12px] shadow-md -mt-[100px] p-[20px] md:p-[24px] xl:p-[32px] font-outfit">
+            <div className="flex flex-col gap-3  ">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div className="col-span-12 md:col-span-4 xl:col-span-5">
+                  <div className="relative">
+                    <select
+                      ref={selectRef}
+                      value={filters.subCategory}
+                      onChange={(e) => handleFilterChange('subCategory', e.target.value)}
+                      className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
+                    >
+                      <option value="">Select Nurse Category</option>
+                      {dropdownData.serviceSubCategories.length > 0 ? (
+                        dropdownData.serviceSubCategories.map((service, index) => (
+                          <option key={index} value={service}>
+                            {service}
+                          </option>
+                        ))
+                      ) : (
+                        // Fallback static options if API data is not available
+                        <>
+                          <option value="elderlycarenurse">Elderly Care Nurse</option>
+                          <option value="postsurgerycare">Post-Surgery Care</option>
+                          <option value="bedriddencare">Bedridden Care</option>
+                          <option value="cardiologist">Cardiologist</option>
+                          <option value="cardiacnurse">Cardiac Nurse</option>
+                        </>
+                      )}
+                    </select>
+                    <MdKeyboardArrowDown
+                      className="absolute right-3 top-1/2 w-[20px] h-[20px] -translate-y-1/2"
+                      onClick={() =>
+                        selectRef.current.focus() || selectRef.current?.click()
+                      }
+                    />
                   </div>
+                </div>
+                <div className="col-span-12 md:col-span-4 xl:col-span-5">
+                  <input
+                    value={filters.location}
+                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                    className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] border-[#3D3D3D] rounded-[8px] w-full p-3 placeholder:text-[#3D3D3D] "
+                    placeholder="Enter Your Location"
+                  />
+                </div>
+                <div className="col-span-12 md:col-span-4 xl:col-span-2">
+                  <div>
+                    <button className="bg-[#A2CD48] text-white p-3 rounded-[12px] flex gap-2 items-center md:w-full">
+                      <MdOutlineMyLocation className="text-white w-[22px] h-[22px]" />
+                      <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold">
+                        Use My Location
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-12 md:grid-cols-12 gap-3">
+                <div className="col-span-12 md:col-span-4">
+                  <div className="relative">
+                    {/* Custom Styled UI */}
+                    <div
+                      className="flex items-center justify-between border border-[#3D3D3D] rounded-[8px] 
+                   w-full p-3 cursor-pointer"
+                      onClick={() => selectRef.current?.click()}
+                    >
+                      {/* Left: Show selected option dynamically */}
+                      <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold text-[#3D3D3D]">
+                        {selectedValue}
+                      </span>
 
-                  {/* Actual select (invisible) */}
-                  <select
-                    ref={selectRef}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={(e) => setSelectedValue(e.target.value)}
-                  >
-                    <option>Nearest</option>
-                    <option>2km</option>
-                    <option>3km</option>
-                  </select>
+                      {/* Right: SortBy + Arrow */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold text-[#3D3D3D]">
+                          Sort By
+                        </span>
+                        <MdKeyboardArrowDown className="w-[20px] h-[20px]" />
+                      </div>
+                    </div>
+
+                    {/* Actual select (invisible) */}
+                    <select
+                      ref={selectRef}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => setSelectedValue(e.target.value)}
+                    >
+                      <option>Nearest</option>
+                      <option>2km</option>
+                      <option>3km</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="col-span-12 md:col-span-4">
+                  <div className="relative">
+                    <select
+                      value={filters.experience}
+                      onChange={(e) => handleFilterChange('experience', e.target.value)}
+                      className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
+                    >
+                      <option value="">Experience</option>
+                      {dropdownData.experiences.length > 0 ? (
+                        dropdownData.experiences.map((exp, index) => (
+                          <option key={index} value={exp}>
+                            {exp} {exp === 1 ? 'year' : 'years'}
+                          </option>
+                        ))
+                      ) : (
+                        // Fallback static options if API data is not available
+                        <>
+                          <option value="2">2 years</option>
+                          <option value="5">5 years</option>
+                          <option value="7">7 years</option>
+                          <option value="10">10 years</option>
+                        </>
+                      )}
+                    </select>
+                    <MdKeyboardArrowDown
+                      className="absolute right-3 top-1/2 w-[20px] h-[20px] -translate-y-1/2"
+                      onClick={() =>
+                        selectRef.current.focus() || selectRef.current?.click()
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="col-span-12 md:col-span-4">
+                  <div className="relative">
+                    <select
+                      value={filters.gender}
+                      onChange={(e) => handleFilterChange('gender', e.target.value)}
+                      className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
+                    >
+                      <option value="">Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    <MdKeyboardArrowDown
+                      className="absolute right-3 top-1/2 w-[20px] h-[20px] -translate-y-1/2"
+                      onClick={() =>
+                        selectRef.current.focus() || selectRef.current?.click()
+                      }
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="col-span-12 md:col-span-4">
-                <div className="relative">
-                  <select
-                    value={filters.experience}
-                    onChange={(e) => handleFilterChange('experience', e.target.value)}
-                    className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
-                  >
-                    <option value="">Experience</option>
-                    {dropdownData.experiences.length > 0 ? (
-                      dropdownData.experiences.map((exp, index) => (
-                        <option key={index} value={exp}>
-                          {exp} {exp === 1 ? 'year' : 'years'}
-                        </option>
-                      ))
-                    ) : (
-                      // Fallback static options if API data is not available
-                      <>
-                        <option value="2">2 years</option>
-                        <option value="5">5 years</option>
-                        <option value="7">7 years</option>
-                        <option value="10">10 years</option>
-                      </>
-                    )}
-                  </select>
-                  <MdKeyboardArrowDown
-                    className="absolute right-3 top-1/2 w-[20px] h-[20px] -translate-y-1/2"
-                    onClick={() =>
-                      selectRef.current.focus() || selectRef.current?.click()
-                    }
-                  />
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-4">
-                <div className="relative">
-                  <select
-                    value={filters.gender}
-                    onChange={(e) => handleFilterChange('gender', e.target.value)}
-                    className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
-                  >
-                    <option value="">Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                  <MdKeyboardArrowDown
-                    className="absolute right-3 top-1/2 w-[20px] h-[20px] -translate-y-1/2"
-                    onClick={() =>
-                      selectRef.current.focus() || selectRef.current?.click()
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <button
-                onClick={handleSearch}
-                className="bg-[#A2CD48] px-8 py-3 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.04px] text-white font-semibold w-fit "
-              >
-                Search Providers
-              </button>
-              {isFilterActive && (
+              <div className="flex gap-3 flex-wrap">
                 <button
-                  onClick={handleClearFilters}
-                  className="bg-gray-500 px-8 py-3 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.04px] text-white font-semibold w-fit "
+                  onClick={handleSearch}
+                  className="bg-[#A2CD48] px-8 py-3 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.04px] text-white font-semibold w-fit "
                 >
-                  Clear Filters
+                  Search Providers
                 </button>
-              )}
+                {isFilterActive && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="bg-gray-500 px-8 py-3 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] xl:text-[20px] xl:tracking-[0.04px] text-white font-semibold w-fit "
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Certified Professionals for Sugar Checkup Near You */}
       <div className="max-w-[1440px] mx-auto px-5 md:px-[32px]  xl:px-[120px]">
@@ -476,6 +481,14 @@ const BookNurse = () => {
                         <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
                           {nurse.subCategory}
                         </p>
+                        {/* Status from backend */}
+                        {/* {nurse.status && (
+                          <p className="text-[12px] md:text-[14px] font-semibold">
+                            Status: <span className={`capitalize ${nurse.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
+                              {nurse.status}
+                            </span>
+                          </p>
+                        )} */}
                         <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
                           {nurse.experience} years experience
                         </p>
@@ -497,17 +510,28 @@ const BookNurse = () => {
                             <button
                               className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                               onClick={() => {
+                                if (!isAuthenticated) {
+                                  toast.error('Please login to add items to cart');
+                                  return;
+                                }
                                 setSelectedNurse(nurse);
                                 setIsModalOpen(true);
                               }}
                             >
                               Add To Cart
                             </button>
-                            <Link to={`/nurse-detail/${nurse._id}`}>
-                              <button className="bg-[#A2CD48] text-white px-4 md:px-8  py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
-                                Book Now
-                              </button>
-                            </Link>
+                            <button
+                              className="bg-[#A2CD48] text-white px-4 md:px-8  py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                              onClick={() => {
+                                if (!isAuthenticated) {
+                                  toast.error('Please login to book a nurse');
+                                  return;
+                                }
+                                navigate(`/nurse-detail/${nurse._id}`);
+                              }}
+                            >
+                              Book Now
+                            </button>
                           </div>
                         </div>
                       </div>

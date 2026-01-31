@@ -75,8 +75,8 @@ const CheckOut = () => {
     const safeShipping = productType === "services" ? 0 : (pricing.shippingCost || 0);
     const shippingCost = safeShipping * quantity;
 
-    // Backend: const securityDeposit = pricingDoc.pricings.securityDeposit || 0;
-    const securityDeposit = pricing.securityDeposit || 0;
+    // Backend: const securityDeposit = (pricingDoc.pricings.securityDeposit || 0) * qty;
+    const securityDeposit = (pricing.securityDeposit || 0) * quantity;
 
     // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
     const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
@@ -108,11 +108,11 @@ const CheckOut = () => {
     let totalSecurity = 0;
 
     cartItems.forEach(item => {
-      const qty = item.cartquantity || 1;
-      const base = (item.productprice || 0) * qty;
+      // Backend already calculated these values with quantity
+      const base = item.equipmentPrice || item.servicePrice || 0;
       const tax = (base * (item.producttaxpercentage || 0)) / 100;
-      const shipping = (item.productshippingcost || 0) * qty;
-      const security = (item.refundableSecurityDep || 0) * qty;
+      const shipping = item.productshippingcost || 0;  // Already × qty from backend
+      const security = item.refundableSecurityDep || 0;  // Already × qty from backend
 
       totalBase += base;
       totalTax += tax;
@@ -708,7 +708,7 @@ const CheckOut = () => {
                         <p className="flex justify-between">
                           <span className="font-bold">Rental Cost:</span>
                           <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                            ₹{item.productprice}
+                            ₹{item.equipmentPrice || item.servicePrice || 0}
                           </span>
                         </p>
                         <p className="flex justify-between">
@@ -720,13 +720,13 @@ const CheckOut = () => {
                         <p className="flex justify-between">
                           <span className="font-bold">Tax ({item.producttaxpercentage}%):</span>
                           <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                            ₹{((item.productprice || 0) * (item.producttaxpercentage || 0) * (item.cartquantity || 1) / 100).toFixed(2)}
+                            ₹{(((item.equipmentPrice || item.servicePrice || 0) * (item.producttaxpercentage || 0)) / 100).toFixed(2)}
                           </span>
                         </p>
                         <p className="flex justify-between">
                           <span className="font-bold">Shipping:</span>
                           <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                            ₹{((item.productshippingcost || 0) * (item.cartquantity || 1)).toFixed(2)}
+                            ₹{item.productshippingcost || 0}
                           </span>
                         </p>
                         <p className="flex justify-between">
@@ -734,7 +734,13 @@ const CheckOut = () => {
                             Refundable Security Deposit:
                           </span>
                           <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px]">
-                            ₹{((item.refundableSecurityDep || 0) * (item.cartquantity || 1)).toFixed(2)}
+                            ₹{item.refundableSecurityDep || 0}
+                          </span>
+                        </p>
+                        <p className="flex justify-between border-t pt-2 mt-2">
+                          <span className="font-bold">Item Total:</span>
+                          <span className="text-[14px] leading-[22px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.56px] font-bold">
+                            ₹{item.TotalAmount || 0}
                           </span>
                         </p>
                       </div>

@@ -48,8 +48,26 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
 
   const calculateTotalAmount = () => {
     if (!itemData || !itemData.pricings) return 0;
-    const basePrice = itemData.pricings[rentalType] || 0;
-    return basePrice * quantity * days;
+
+    // MATCH BACKEND CALCULATION EXACTLY
+    // Backend: const baseAmount = unitPrice * qty * rentalValue;
+    const baseAmount = (itemData.pricings[rentalType] || 0) * quantity * days;
+
+    // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
+    const taxAmount = (baseAmount * (itemData.pricings.taxPercentage || 0)) / 100;
+
+    // Backend: const safeShipping = productType === "services" ? 0 : shippingCost;
+    // Backend: totalAmount includes (safeShipping * qty)
+    const safeShipping = itemType === "services" ? 0 : (itemData.pricings.shippingCost || 0);
+    const shippingCost = safeShipping * quantity;
+
+    // Backend: const securityDeposit = (pricingDoc.pricings.securityDeposit || 0) * qty;
+    const securityDeposit = (itemData.pricings.securityDeposit || 0) * quantity;
+
+    // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
+    const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
+
+    return totalAmount;
   };
 
   const handleAddToCart = async () => {

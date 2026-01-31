@@ -16,15 +16,18 @@ import {
   CountData,
   faqData,
 } from "../../utils/Data";
-import { getAllEquipmentsApi } from "../../apis/authapis";
+import { getAllEquipmentsApi, getNurseFiltersApi, getAllNursesApi } from "../../apis/authapis";
 import { MdKeyboardArrowLeft } from "react-icons/md";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { TiStarFullOutline } from "react-icons/ti";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [searchActiveIndex, setSearchActiveIndex] = useState(0);
   const slidesPerView = 3;
 
   // Home page search states
@@ -40,11 +43,18 @@ const Home = () => {
   const [subscribeEmail, setSubscribeEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
+  // Search results states
+  const [searchResults, setSearchResults] = useState([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedItemType, setSelectedItemType] = useState("equipment");
+
   const lastIndex = TopHealthServices.length - slidesPerView;
   const lastIndexReview = ReviewsData.length - slidesPerView;
 
-  // Handle home page search - Navigate to BookNurse with filter parameters
-  const handleHomeSearch = () => {
+  // Handle home page search - Fetch and display results on same page
+  const handleHomeSearch = async () => {
     const trimmedService = serviceQuery.trim();
     const trimmedLocation = locationQuery.trim();
 
@@ -53,25 +63,38 @@ const Home = () => {
       return;
     }
 
-    // Build URL parameters for BookNurse page filters
-    const params = new URLSearchParams();
+    try {
+      setLoadingSearch(true);
+      setSearchError(null);
+      setHasSearched(true);
 
-    // Add service as search filter if provided (searches across serviceName, description, category, subCategory)
-    if (trimmedService) {
-      params.append("search", trimmedService);
+      const filters = {
+        page: 1,
+        limit: 10, // No limit, show all results
+      };
+
+      if (trimmedService) {
+        filters.search = trimmedService;
+      }
+
+      if (trimmedLocation) {
+        filters.location = trimmedLocation;
+      }
+
+      const response = await getNurseFiltersApi(filters);
+
+      if (response.data && response.data.data) {
+        setSearchResults(response.data.data);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+      setSearchError("Failed to load search results");
+      setSearchResults([]);
+    } finally {
+      setLoadingSearch(false);
     }
-
-    // Add location as city filter if provided
-    if (trimmedLocation) {
-      params.append("location", trimmedLocation);
-    }
-
-    // Navigate to BookNurse page with filter parameters
-    navigate(`/book-nurse?${params.toString()}`);
-
-    // Clear input fields
-    setServiceQuery("");
-    setLocationQuery("");
   };
 
   // Handle Enter key press in search inputs
@@ -111,6 +134,22 @@ const Home = () => {
     };
 
     fetchEquipments();
+  }, []);
+
+  // Fetch all services to match with search results
+  const [allServices, setAllServices] = useState([]);
+  useEffect(() => {
+    const fetchAllServices = async () => {
+      try {
+        const response = await getAllNursesApi(1, 1000); // Fetch large limit to match IDs
+        if (response.data && response.data.data) {
+          setAllServices(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching all services:", error);
+      }
+    };
+    fetchAllServices();
   }, []);
 
   const handleSubscribe = async () => {
@@ -279,6 +318,210 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Search Results Section */}
+      {hasSearched && (
+        <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] pb-[200px] md:pb-[60px]">
+          <h1 className="font-outfit font-bold text-[26px] tracking-[0.56px] md:text-[34px] md:tracking-[0.72px] xl:text-[46px] leading-[100%] xl:tracking-[0.96px] text-[#34658C] mb-2 text-center">
+            Search Results
+          </h1>
+          {/* <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center text-[#475569] mb-[44px]">
+            {serviceQuery && `Showing results for "${serviceQuery}"`}
+            {serviceQuery && locationQuery && " in "}
+            {locationQuery && `"${locationQuery}"`}
+          </p> */}
+          <div className="relative max-w-[1200px] mx-auto ">
+            <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 flex gap-4">
+              <div
+                className={`custom-prev-search
+    bg-[#A2CD48] w-[32px] h-[32px] rounded-full flex items-center justify-center
+    ${searchActiveIndex === 0 ? "opacity-40 pointer-events-none" : ""}`}
+              >
+                <MdKeyboardArrowLeft className="text-white text-xl" />
+              </div>
+              <div
+                className={`custom-next-search 
+    bg-[#A2CD48] w-[32px] h-[32px] rounded-full flex items-center justify-center
+    ${searchActiveIndex === lastIndex ? "opacity-40 pointer-events-none" : ""}`}
+              >
+                <MdKeyboardArrowRight className="text-white text-xl" />
+              </div>
+            </div>
+            <Swiper
+              modules={[Pagination, Navigation]}
+              spaceBetween={20}
+              navigation={{
+                nextEl: ".custom-next-search",
+                prevEl: ".custom-prev-search",
+              }}
+              onSlideChange={(swiper) => setSearchActiveIndex(swiper.realIndex)}
+              onSwiper={(swiper) => setSearchActiveIndex(swiper.realIndex)}
+              breakpoints={{
+                0: {
+                  slidesPerView: 1,
+                },
+                768: {
+                  slidesPerView: 1,
+                },
+                1024: {
+                  slidesPerView: 2,
+                },
+              }}
+            >
+              {loadingSearch ? (
+                <SwiperSlide className="p-1">
+                  <div
+                    className="p-4 rounded-[16px] flex items-center justify-center h-[250px]"
+                    style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                  >
+                    <p className="text-[16px] text-[#34658C] font-semibold">
+                      Loading search results...
+                    </p>
+                  </div>
+                </SwiperSlide>
+              ) : searchError ? (
+                <SwiperSlide className="p-1">
+                  <div
+                    className="p-4 rounded-[16px] flex items-center justify-center h-[250px]"
+                    style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                  >
+                    <p className="text-[16px] text-red-500 font-semibold">
+                      {searchError}
+                    </p>
+                  </div>
+                </SwiperSlide>
+              ) : searchResults.length === 0 ? (
+                <SwiperSlide className="p-1">
+                  <div
+                    className="p-4 rounded-[16px] flex items-center justify-center h-[250px]"
+                    style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                  >
+                    <p className="text-[16px] text-[#34658C] font-semibold">
+                      No services found matching your search criteria
+                    </p>
+                  </div>
+                </SwiperSlide>
+              ) : (
+                searchResults.map((result, index) => {
+                  // Check if the result ID exists in allServices and use that data if matched
+                  const matchedService = allServices.find(
+                    (s) => s._id === result._id
+                  );
+                  const service = matchedService || result;
+
+                  const getPriceDisplay = () => {
+                    if (service.pricings) {
+                      if (service.pricings.perHour) {
+                        return `₹${service.pricings.perHour}/hour | ₹${service.pricings.perDay}/day`;
+                      }
+
+                      const prices = [];
+                      if (service.pricings.perDay)
+                        prices.push(`₹${service.pricings.perDay}/day`);
+                      if (service.pricings.perWeek)
+                        prices.push(`₹${service.pricings.perWeek}/week`);
+                      if (service.pricings.perMonth)
+                        prices.push(`₹${service.pricings.perMonth}/month`);
+                      return prices.join(" | ") || "Contact for pricing";
+                    }
+                    return "Contact for pricing";
+                  };
+
+                  return (
+                    <SwiperSlide key={index} className="p-1">
+                      <div
+                        className="p-4 rounded-[16px]"
+                        style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                          <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
+                            <img
+                              src={
+                                service.profileImage ||
+                                service.images?.[0] ||
+                                "/assets/NurseImages/default-nurse.png"
+                              }
+                              alt={service.serviceName || "Service Image"}
+                              className="rounded-[12px] w-[200px] h-[200px] object-cover"
+                            />
+                          </div>
+                          <div className="col-span-12 md:col-span-7">
+                            <div className="flex flex-col justify-center h-full gap-[6px]">
+                              <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
+                                {service.serviceName || service.fullName}
+                              </h1>
+                              {service.subCategory && (
+                                <p className="text-[14px] md:text-[16px] font-semibold text-[#475569]">
+                                  {service.subCategory}
+                                </p>
+                              )}
+                              {/* <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold line-clamp-2">
+                                {service.description || service.about}
+                              </p> */}
+                              {/* {(service.city || service.statecity?.city) && (
+                                <p className="text-[14px] md:text-[16px] font-semibold text-[#475569]">
+                                  📍 {service.city || service.statecity?.city}
+                                </p>
+                              )} */}
+                              <div>
+                                {service.experience && (
+                                  <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
+                                    Experience:{" "}
+                                    <span className="text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
+                                      {service.experience} Years
+                                    </span>
+                                  </p>
+                                )}
+                                {service.pricings && (
+                                  <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
+                                    Service Price:{" "}
+                                    <span className="text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
+                                      {getPriceDisplay()}
+                                    </span>
+                                  </p>
+                                )}
+                                <div className="flex gap-2 mt-[6px]">
+                                  <button
+                                    className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                    onClick={() => {
+                                      if (!isAuthenticated) {
+                                        toast.error('Please login to add items to cart');
+                                        return;
+                                      }
+                                      setSelectedEquipment(service);
+                                      setSelectedItemType("service");
+                                      setIsModalOpen(true);
+                                    }}
+                                  >
+                                    Add To Cart
+                                  </button>
+                                  <button
+                                    className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                    onClick={() => {
+                                      if (!isAuthenticated) {
+                                        toast.error('Please login to book service');
+                                        return;
+                                      }
+                                      navigate(`/nurse-detail/${service._id}`);
+                                    }}
+                                  >
+                                    Book Now
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </SwiperSlide>
+                  );
+                })
+              )}
+            </Swiper>
+          </div>
+        </div>
+      )
+      }
+
       {/* Our Top Equipments */}
       <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] pb-[200px] md:pb-[60px]">
         <h1 className="font-outfit font-bold text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] leading-[100%] xl:tracking-[0.96px] text-[#34658C] mb-2 text-center">
@@ -406,6 +649,14 @@ const Home = () => {
                             <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
                               {data.equipmentName}
                             </h1>
+                            {/* Status from backend */}
+                            {/* {data.status && (
+                              <p className="text-[12px] md:text-[14px] font-semibold">
+                                Status: <span className={`capitalize ${data.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
+                                  {data.status}
+                                </span>
+                              </p>
+                            )} */}
                             <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold line-clamp-2">
                               {data.advantages}
                             </p>
@@ -420,17 +671,29 @@ const Home = () => {
                                 <button
                                   className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                                   onClick={() => {
+                                    if (!isAuthenticated) {
+                                      toast.error('Please login to add items to cart');
+                                      return;
+                                    }
                                     setSelectedEquipment(data);
+                                    setSelectedItemType("equipment");
                                     setIsModalOpen(true);
                                   }}
                                 >
                                   Add To Cart
                                 </button>
-                                <Link to={`/equipment/${data._id}`}>
-                                  <button className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit">
-                                    Rent Now
-                                  </button>
-                                </Link>
+                                <button
+                                  className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                  onClick={() => {
+                                    if (!isAuthenticated) {
+                                      toast.error('Please login to rent equipment');
+                                      return;
+                                    }
+                                    navigate(`/equipment/${data._id}`);
+                                  }}
+                                >
+                                  Rent Now
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -781,18 +1044,20 @@ const Home = () => {
           ))}
         </div>
       </div>
-      {isModalOpen && (
-        <AddToCartModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedEquipment(null);
-          }}
-          itemData={selectedEquipment}
-          itemType="equipment"
-        />
-      )}
-    </div>
+      {
+        isModalOpen && (
+          <AddToCartModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedEquipment(null);
+            }}
+            itemData={selectedEquipment}
+            itemType={selectedItemType}
+          />
+        )
+      }
+    </div >
   );
 };
 

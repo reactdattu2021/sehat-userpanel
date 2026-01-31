@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { IoMenu } from "react-icons/io5";
 import { IoClose } from "react-icons/io5";
 import { HiUser } from "react-icons/hi2";
+import { toast } from "react-toastify";
 
 import Login from "../pages/authentication/Login";
 import Signup from "../pages/authentication/Signup";
 import { useAuth } from "../context/AuthContext";
-import { globalSearchApi } from "../apis/authapis";
+import { globalSearchApi, getAllAddressesApi } from "../apis/authapis";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,8 +16,54 @@ const Header = () => {
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [userCity, setUserCity] = useState("Select City");
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch user's city from their address
+  useEffect(() => {
+    const fetchUserCity = async () => {
+      if (!isAuthenticated) {
+        setUserCity("Select City");
+        return;
+      }
+
+      try {
+        const response = await getAllAddressesApi();
+
+        // Get current user ID from localStorage
+        const userData = JSON.parse(localStorage.getItem("userData"));
+        const currentUserId = userData?.userId;
+
+        // Handle different possible response structures
+        let addressList = [];
+        if (response.data.data) {
+          addressList = response.data.data;
+        } else if (response.data.addresses) {
+          addressList = response.data.addresses;
+        } else if (Array.isArray(response.data)) {
+          addressList = response.data;
+        }
+
+        // Filter addresses for current user only
+        const userAddresses = addressList.filter(
+          (address) => address.userId === currentUserId
+        );
+
+        // Get city from the first address
+        if (userAddresses.length > 0 && userAddresses[0].city) {
+          setUserCity(userAddresses[0].city);
+        } else {
+          setUserCity("Select City");
+        }
+      } catch (error) {
+        console.error("Error fetching user city:", error);
+        setUserCity("Select City");
+      }
+    };
+
+    fetchUserCity();
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -119,7 +166,7 @@ const Header = () => {
                   </div>
                   <div className="flex justify-end gap-2 items-center ">
                     <p className=" text-[#333333] text-[12px] md:text-[14px]">
-                      Hyderabad
+                      {userCity}
                     </p>
                     <img
                       src="/assets/headerImages/chervon-up.png"
@@ -190,7 +237,12 @@ const Header = () => {
                         className="bg-[#A2CD48] px-6 py-2 rounded-[12px] flex gap-2 items-center cursor-pointer hover:bg-[#8fb83d] transition-colors"
                         onClick={() => {
                           setMenuOpen(false);
-                          navigate('/cart');
+                          if (!isAuthenticated) {
+                            toast.error('Please login to view your cart');
+                            setSignInOpen(true);
+                          } else {
+                            navigate('/cart');
+                          }
                         }}
                       >
                         <img
@@ -294,7 +346,14 @@ const Header = () => {
             {/* Cart Button */}
             <div
               className=" bg-[#A2CD48] px-6 py-2 rounded-[12px] flex gap-2 items-center cursor-pointer hover:bg-[#8fb83d] transition-colors"
-              onClick={() => navigate('/cart')}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast.error('Please login to view your cart');
+                  setSignInOpen(true);
+                } else {
+                  navigate('/cart');
+                }
+              }}
             >
               <img
                 src="/assets/headerImages/cart.png"

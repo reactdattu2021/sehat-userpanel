@@ -371,3 +371,26 @@ export const getReviewsApi = (productId, productType, page = 1, limit = 10) => {
     }
   );
 };
+
+// ==================
+// 40. GET ALL BLOGS API
+// ==================
+export const getAllBlogsApi = (page = 1, limit = 10) => {
+  return axiosInstance.get("/user/blogs/all", {
+    params: { page, limit },
+  });
+};
+
+// ==================
+// 41. GET BLOG BY ID API
+// ==================
+export const getBlogByIdApi = (blogId) => {
+  return axiosInstance.get(`/user/blogs/${blogId}`);
+};
+
+// ==================
+// 42. CONTACT US API
+// ==================
+export const contactUsApi = (contactData) => {
+  return axiosInstance.post("/userAddress/contactus", contactData);
+};

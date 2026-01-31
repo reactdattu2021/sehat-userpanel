@@ -8,11 +8,13 @@ import { getNurseByIdApi } from "../../apis/authapis";
 import AddToCartModal from "../../components/AddToCartModal";
 import ReviewModal from "../../pages/reviewComponents/ReviewModal"
 import Reviews from "../../pages/reviewComponents/Reviews.jsx";
+import { useAuth } from "../../context/AuthContext";
 
 
 const NurseDetail = () => {
   const { nurseId } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,11 +90,39 @@ const NurseDetail = () => {
 
   const calculateTotalAmount = () => {
     if (!nurse || !nurse.pricings) return 0;
-    const basePrice = nurse.pricings[rentalType] || 0;
-    return basePrice * quantity * days;
+
+    // MATCH BACKEND CALCULATION EXACTLY
+    // Backend: const baseAmount = unitPrice * qty * rentalValue;
+    const baseAmount = (nurse.pricings[rentalType] || 0) * quantity * days;
+
+    // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
+    const taxAmount = (baseAmount * (nurse.pricings.taxPercentage || 0)) / 100;
+
+    // Backend: const safeShipping = productType === "services" ? 0 : shippingCost;
+    // Backend: totalAmount includes (safeShipping * qty)
+    const safeShipping = 0; // Services don't have shipping
+    const shippingCost = safeShipping * quantity;
+
+    // Backend: const securityDeposit = (pricingDoc.pricings.securityDeposit || 0) * qty;
+    const securityDeposit = (nurse.pricings.securityDeposit || 0) * quantity;
+
+    // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
+    const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
+
+    return totalAmount;
   };
 
   const handleBookNow = () => {
+    // Check authentication first
+    // if (!isAuthenticated) {
+    //   toast.error("Please login to book a nurse");
+    //   // Save current location to return after login
+    //   localStorage.setItem('redirectAfterLogin', window.location.pathname);
+    //   // Dispatch custom event to open login modal
+    //   window.dispatchEvent(new CustomEvent('openLoginModal'));
+    //   return;
+    // }
+
     // Validation
     if (!nurse) {
       toast.error('Nurse data not loaded');
@@ -160,7 +190,7 @@ const NurseDetail = () => {
           pricing: {
             unitPrice: nurse.pricings[rentalType],
             shippingCost: 0, // Services don't have shipping
-            taxPercentage: 0,
+            taxPercentage: nurse.pricings.taxPercentage || 0,
             securityDeposit: nurse.pricings.securityDeposit || 0
           }
         }
@@ -236,6 +266,14 @@ const NurseDetail = () => {
                 <h1 className="text-[24px] tracking-[0.48px] md:text-[36px] md:tracking-[0.72px] font-bold text-[#34658C]">
                   {nurse.fullName}
                 </h1>
+                {/* Status from backend */}
+                {/* {nurse.status && (
+                  <p className="text-[14px] md:text-[16px] font-semibold">
+                    Status: <span className={`capitalize ${nurse.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
+                      {nurse.status}
+                    </span>
+                  </p>
+                )} */}
                 <div className="flex flex-col gap-2">
                   <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
                     {nurse.subCategory}

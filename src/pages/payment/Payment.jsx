@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { replace, useLocation, useNavigate } from "react-router-dom";
 import { FaCheckCircle } from "react-icons/fa";
 import { IoCheckmarkSharp } from "react-icons/io5";
 import { toast } from "react-toastify";
@@ -161,7 +161,10 @@ const Payment = () => {
           paymentMode: "online",
           addressId: addressId,
           selectedItems: bookingData.selectedCartIds || [],
+          amount: orderSummary.totalAmount,
+            
         };
+        console.log("💰 Order Summary:",  orderSummary.totalAmount)  ;
 
         console.log("📤 Cart Booking Payload:", cartPayload);
         response = await cartBookingApi(cartPayload);
@@ -281,6 +284,7 @@ const Payment = () => {
   const verifyPayment = async (razorpayResponse, orderId, amount) => {
     try {
       setProcessing(true);
+      console.log("razor pay response", razorpayResponse);
 
       const verifyPayload = {
         razorpay_order_id: orderId,
@@ -314,9 +318,11 @@ const Payment = () => {
       if (response.data.success) {
         toast.success("Payment successful! Booking confirmed.");
         navigate("/thankyou", {
+          replace: true,
           state: {
             booking: response.data.booking,
             paymentMode: "online",
+            
           },
         });
       } else {
@@ -384,6 +390,7 @@ const Payment = () => {
           paymentMode: "COD",
           addressId: addressId,
           selectedItems: bookingData.selectedCartIds || [],
+          amount: orderSummary.totalAmount,
         };
 
         console.log("📤 COD Cart Booking Payload:", cartPayload);

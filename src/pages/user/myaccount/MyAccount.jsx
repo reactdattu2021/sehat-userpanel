@@ -7,6 +7,8 @@ import ChangePassword from "./ChangePassword";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
 import { useAuth } from "../../../context/AuthContext";
+import { subscribeApi } from "../../../apis/authapis";
+import { toast } from "react-toastify";
 
 const MyAccount = () => {
   const [activeTab, setActiveTab] = useState("profile");
@@ -14,6 +16,8 @@ const MyAccount = () => {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [mobileView, setMobileView] = useState(false);
   const { logout } = useAuth();
+  const [subscribeEmail, setSubscribeEmail] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const renderContent = () => {
     switch (activeTab) {
       case "profile":
@@ -39,6 +43,39 @@ const MyAccount = () => {
       console.error("Logout error:", result.error);
     }
   };
+
+  const handleSubscribe = async () => {
+    if (!subscribeEmail.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(subscribeEmail)) {
+      toast.error("Please enter a valid email");
+      return;
+    }
+
+    try {
+      const res = await subscribeApi(subscribeEmail);
+
+      if (res?.data?.success) {
+        toast.success("Subscribed successfully 🎉");
+        setIsSubscribed(true);
+      }
+      // ✅ HANDLE ALREADY SUBSCRIBED
+      else if (res?.data?.statuscode === 409) {
+        toast.info(res.data.message);
+        setIsSubscribed(true);
+      } else {
+        toast.error(res?.data?.message || "Subscription failed");
+      }
+    } catch (error) {
+      console.error("Subscribe error:", error);
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
+  };
+
   return (
     <div className="space-y-[60px]  md:space-y-[80px] xl:space-y-[120px]">
       {/* Hero section  */}
@@ -69,11 +106,10 @@ const MyAccount = () => {
                 ].map((item, i) => (
                   <li
                     key={item.id}
-                    className={`cursor-pointer px-4 py-5 ${
-                      activeTab === item.id
-                        ? "bg-[#34658C] text-white"
-                        : "text-black"
-                    } ${i === 0 ? "rounded-t-[12px]" : ""}`}
+                    className={`cursor-pointer px-4 py-5 ${activeTab === item.id
+                      ? "bg-[#34658C] text-white"
+                      : "text-black"
+                      } ${i === 0 ? "rounded-t-[12px]" : ""}`}
                     onClick={() => {
                       setActiveTab(item.id);
                       setMobileView(true);
@@ -180,12 +216,19 @@ const MyAccount = () => {
               </div>
               <div className="flex flex-col md:flex-row gap-3 justify-center">
                 <input
-                  type="text"
+                  type="email"
                   placeholder="Enter your Email Address"
-                  className="font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  border-[1px] border-[#FFFFFF] w-full md:w-[386px] bg-transparent px-6 py-3 rounded-[16px]"
+                  value={subscribeEmail}
+                  disabled={isSubscribed}
+                  onChange={(e) => setSubscribeEmail(e.target.value)}
+                  className="font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  border-[1px] border-[#FFFFFF] w-full md:w-[386px] bg-transparent px-6 py-3 rounded-[16px] disabled:opacity-60"
                 />
-                <button className="bg-[#FFFFFF] font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-[#34658C] px-6 py-3 rounded-[16px] w-full md:w-fit">
-                  Subscribe
+                <button
+                  onClick={handleSubscribe}
+                  disabled={isSubscribed}
+                  className="bg-[#FFFFFF] font-semibold text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-[#34658C] px-6 py-3 rounded-[16px] w-full md:w-fit disabled:opacity-60"
+                >
+                  {isSubscribed ? "Subscribed ✓" : "Subscribe"}
                 </button>
               </div>
             </div>
