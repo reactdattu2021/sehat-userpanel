@@ -309,7 +309,7 @@ const EquipmentDetail = () => {
               <div className="max-w-[310px] md:max-w-[420px]">
                 <div className="flex justify-between mb-5">
                   <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                    Choose Days
+                    Choose {rentalType === "perDay" ? "Days" : rentalType === "perWeek" ? "Weeks" : "Months"}
                   </p>
                   <div className="flex gap-1 md:gap-2 justify-center items-center ">
                     <button
@@ -383,10 +383,24 @@ const EquipmentDetail = () => {
                   </span>
                 </p>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
+                  Tax ({equipment.pricings.taxPercentage || 0}%):
+                  <span className="text-[#666666]">
+                    {" "}
+                    ₹{(((equipment.pricings[rentalType] || 0) * quantity * days * (equipment.pricings.taxPercentage || 0)) / 100).toLocaleString()}
+                  </span>
+                </p>
+                <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
                   Shipping Cost:
                   <span className="text-[#666666]">
                     {" "}
-                    ₹{equipment.pricings.shippingCost}
+                    ₹{((equipment.pricings.shippingCost || 0) * quantity).toLocaleString()}
+                  </span>
+                </p>
+                <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
+                  Security Deposit:
+                  <span className="text-[#666666]">
+                    {" "}
+                    ₹{((equipment.pricings.securityDeposit || 0) * quantity).toLocaleString()}
                   </span>
                 </p>
               </div>

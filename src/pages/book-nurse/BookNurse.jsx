@@ -3,7 +3,7 @@ import { MdKeyboardArrowDown, MdKeyboardArrowLeft, MdKeyboardArrowRight } from "
 import { MdOutlineMyLocation } from "react-icons/md";
 import { faqData } from '../../utils/Data';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi, globalSearchApi } from '../../apis/authapis';
+import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi, globalSearchApi, getNurseByIdApi } from '../../apis/authapis';
 import AddToCartModal from '../../components/AddToCartModal';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -154,9 +154,30 @@ const BookNurse = () => {
             item => item.resultType === 'service'
           );
           console.log(`✅ Global search found ${serviceResults.length} service results`);
-          setNurses(serviceResults);
+
+          // Fetch full details with pricing for each service
+          const servicesWithPricing = await Promise.all(
+            serviceResults.map(async (service) => {
+              try {
+                const detailResponse = await getNurseByIdApi(service._id);
+                if (detailResponse.data.success) {
+                  // Combine service data with pricing
+                  return {
+                    ...detailResponse.data.data.service,
+                    pricings: detailResponse.data.data.pricings
+                  };
+                }
+                return service; // Fallback to original if fetch fails
+              } catch (error) {
+                console.error(`Failed to fetch pricing for service ${service._id}:`, error);
+                return service; // Fallback to original if fetch fails
+              }
+            })
+          );
+
+          setNurses(servicesWithPricing);
           setTotalPages(response.data.totalPages);
-          setTotal(serviceResults.length);
+          setTotal(servicesWithPricing.length);
         }
       }
       // Priority 2: Check if filters are active (from URL params or local filters)
@@ -180,7 +201,27 @@ const BookNurse = () => {
 
         if (response.data.success) {
           console.log(`✅ Filter API found ${response.data.data.length} results`);
-          setNurses(response.data.data);
+
+          // Fetch full details with pricing for each nurse
+          const nursesWithPricing = await Promise.all(
+            response.data.data.map(async (nurse) => {
+              try {
+                const detailResponse = await getNurseByIdApi(nurse._id);
+                if (detailResponse.data.success) {
+                  return {
+                    ...detailResponse.data.data.service,
+                    pricings: detailResponse.data.data.pricings
+                  };
+                }
+                return nurse;
+              } catch (error) {
+                console.error(`Failed to fetch pricing for nurse ${nurse._id}:`, error);
+                return nurse;
+              }
+            })
+          );
+
+          setNurses(nursesWithPricing);
           setTotalPages(response.data.totalPages);
           setTotal(response.data.total);
         }

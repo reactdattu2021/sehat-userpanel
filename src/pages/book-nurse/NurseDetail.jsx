@@ -433,7 +433,7 @@ const NurseDetail = () => {
               <div className="max-w-[310px] md:max-w-[420px]">
                 <div className="flex justify-between mb-5">
                   <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                    Choose Days
+                    Choose {rentalType === "perHour" ? "Hours" : rentalType === "perDay" ? "Days" : rentalType === "perWeek" ? "Weeks" : "Months"}
                   </p>
                   <div className="flex gap-1 md:gap-2 justify-center items-center  ">
                     <button

@@ -125,7 +125,7 @@ const ForgotPassword = () => {
                     {/* Back to Login Link */}
                     <div className="mt-8 text-center">
                         <Link
-                            to="/login"
+                            to="/"
                             className="inline-flex items-center text-[14px] md:text-[16px] font-semibold text-[#A2CD48] hover:text-[#8fb83d] transition-colors"
                         >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

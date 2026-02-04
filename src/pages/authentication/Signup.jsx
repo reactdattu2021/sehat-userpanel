@@ -114,7 +114,7 @@ const Signup = ({ setSignUpOpen, setSignInOpen }) => {
 
     const handleGoogleLogin = () => {
         console.log('Google login clicked');
-        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/Sehatmitra';
+        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://192.168.1.23:5002/Sehatmitra';
         window.location.href = `${baseURL}/users/google`;
     };
 

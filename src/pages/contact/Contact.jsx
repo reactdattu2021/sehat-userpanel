@@ -4,15 +4,11 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { PiPhoneCallFill } from "react-icons/pi";
 import { IoLogoWhatsapp } from "react-icons/io";
 import { getAllNursesApi, contactUsApi } from "../../apis/authapis";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const Contact = () => {
   const selectRef = useRef(null);
   const hasFetchedDropdownData = useRef(false);
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
 
   // State for all services
   const [allServices, setAllServices] = useState([]);
@@ -122,11 +118,6 @@ const Contact = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-    toast.error("Please login to send a message");
-    navigate("/"); // optional but recommended
-    return;
-  }
 
     // Validate form
     if (!validateForm()) {
@@ -167,7 +158,7 @@ const Contact = () => {
       console.error("❌ Error submitting contact form:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to send message. Please try again.",
+        "Failed to send message. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -255,7 +246,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <input
-                    type="number"
+                    type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
@@ -326,11 +317,10 @@ const Contact = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`font-outfit bg-[#A2CD48] px-6 py-3 text-white text-[14px] leading-[22px] tracking-[0.56px] md:text-[20px] md:leading-[100%] md:tracking-[0.04px] font-semibold rounded-[8px] mt-2 ${
-                    isSubmitting
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-[#8fb83d]"
-                  }`}
+                  className={`font-outfit bg-[#A2CD48] px-6 py-3 text-white text-[14px] leading-[22px] tracking-[0.56px] md:text-[20px] md:leading-[100%] md:tracking-[0.04px] font-semibold rounded-[8px] mt-2 ${isSubmitting
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-[#8fb83d]"
+                    }`}
                 >
                   {isSubmitting ? "Submitting..." : "Submit"}
                 </button>

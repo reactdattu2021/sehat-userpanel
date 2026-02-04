@@ -3,7 +3,7 @@ import { MdKeyboardArrowDown, MdKeyboardArrowLeft, MdKeyboardArrowRight } from "
 import { MdOutlineMyLocation } from "react-icons/md";
 import { faqData } from "../../utils/Data";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { getAllEquipmentsApi, getEquipmentFiltersApi, getFilterDropdownDataApi, globalSearchApi } from "../../apis/authapis";
+import { getAllEquipmentsApi, getEquipmentFiltersApi, getFilterDropdownDataApi, globalSearchApi, getEquipmentByIdApi } from "../../apis/authapis";
 import AddToCartModal from "../../components/AddToCartModal";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -109,9 +109,27 @@ const Equipment = () => {
             item => item.resultType === 'equipment'
           );
           console.log(`✅ Global search found ${equipmentResults.length} equipment results`);
-          setEquipments(equipmentResults);
+
+          // Fetch full details with pricing for each equipment
+          const equipmentsWithPricing = await Promise.all(
+            equipmentResults.map(async (equipment) => {
+              try {
+                const detailResponse = await getEquipmentByIdApi(equipment._id);
+                if (detailResponse.data.success) {
+                  // Return the full equipment data with pricing
+                  return detailResponse.data.data;
+                }
+                return equipment; // Fallback to original if fetch fails
+              } catch (error) {
+                console.error(`Failed to fetch pricing for equipment ${equipment._id}:`, error);
+                return equipment; // Fallback to original if fetch fails
+              }
+            })
+          );
+
+          setEquipments(equipmentsWithPricing);
           setTotalPages(response.data.totalPages);
-          setTotal(equipmentResults.length);
+          setTotal(equipmentsWithPricing.length);
         }
       }
       // Priority 2: Check if filters are active
