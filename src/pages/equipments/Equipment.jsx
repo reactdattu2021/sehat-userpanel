@@ -129,7 +129,7 @@ const Equipment = () => {
 
           setEquipments(equipmentsWithPricing);
           setTotalPages(response.data.totalPages);
-          setTotal(equipmentsWithPricing.length);
+          setTotal(response.data.total);
         }
       }
       // Priority 2: Check if filters are active
@@ -453,10 +453,10 @@ const Equipment = () => {
                             <button
                               className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                               onClick={() => {
-                                if (!isAuthenticated) {
-                                  toast.error('Please login to add items to cart');
-                                  return;
-                                }
+                                // if (!isAuthenticated) {
+                                //   toast.error('Please login to add items to cart');
+                                //   return;
+                                // }
                                 setSelectedEquipment(equipment);
                                 setIsModalOpen(true);
                               }}
@@ -466,10 +466,10 @@ const Equipment = () => {
                             <button
                               className="bg-[#A2CD48] text-white  px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                               onClick={() => {
-                                if (!isAuthenticated) {
-                                  toast.error('Please login to rent equipment');
-                                  return;
-                                }
+                                // if (!isAuthenticated) {
+                                //   toast.error('Please login to rent equipment');
+                                //   return;
+                                // }
                                 navigate(`/equipment/${equipment._id}`);
                               }}
                             >

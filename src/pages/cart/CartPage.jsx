@@ -2,15 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { Products, Services, Summary } from "../../utils/Data";
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { IoMdArrowDropdown } from "react-icons/io";
-import { IoMdArrowDropup } from "react-icons/io";
+import { IoMdArrowDropdown, IoMdArrowDropup, IoMdClose } from "react-icons/io";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import CartStepper from "../commonComponents/Stepper";
 import Stepper from "../commonComponents/Stepper";
 import {
   getUserCartApi,
   updateCartApi,
   deleteCartApi,
+  getAllCouponsApi,
+  applyCouponApi,
 } from "../../apis/authapis";
 
 const CartPage = () => {
@@ -21,6 +23,13 @@ const CartPage = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [editCart, setEditCart] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Coupon states
+  const [coupons, setCoupons] = useState([]);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const navigate = useNavigate();
   const modalRef = useRef(null);
@@ -45,6 +54,7 @@ const CartPage = () => {
       }
     };
     fetchCartData();
+    fetchCoupons();
   }, []);
 
   // Recalculate total when selected items change
@@ -54,14 +64,91 @@ const CartPage = () => {
       .reduce((sum, item) => sum + (item.TotalAmount || 0), 0);
     setTotalAmount(selectedTotal);
   }, [selectedItems, cartItems]);
+
+  const fetchCoupons = async () => {
+    try {
+      const response = await getAllCouponsApi(1, 50);
+      if (response.data.success) {
+        const activeCoupons = response.data.data.filter(
+          coupon => coupon.status === 'active' &&
+            new Date(coupon.expireDate) > new Date()
+        );
+        setCoupons(activeCoupons);
+      }
+    } catch (error) {
+      console.error("Error fetching coupons:", error);
+    }
+  };
+
+  const handleApplyCoupon = async (code) => {
+    if (!code) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+
+    if (totalAmount === 0) {
+      toast.error("Cart is empty");
+      return;
+    }
+
+    if (appliedCoupon) {
+      toast.error("Remove current coupon before applying a new one");
+      return;
+    }
+
+    try {
+      setCouponLoading(true);
+      const selectedCartIds = selectedItems;
+      const response = await applyCouponApi(code, selectedCartIds);
+
+      if (response.data.success) {
+        const { discount, selectedOriginalAmount, finalAmount } = response.data;
+
+        setAppliedCoupon({
+          code: code,
+          discount: discount,
+          originalAmount: selectedOriginalAmount
+        });
+
+        setTotalAmount(finalAmount);
+
+        toast.success(`Coupon applied! You saved ₹${discount}`);
+        setShowCouponModal(false);
+        setCouponCode("");
+      }
+    } catch (error) {
+      console.error("Error applying coupon:", error);
+      toast.error(error.response?.data?.message || "Invalid coupon code");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    if (appliedCoupon) {
+      setTotalAmount(appliedCoupon.originalAmount);
+      setAppliedCoupon(null);
+      setCouponCode("");
+      toast.info("Coupon removed");
+    }
+  };
+
   const openEdit = (item) => {
-    // Extract time from startDate for both equipment and services
     let startTime = '';
+    let endTime = '';
+
     if (item.startDate) {
       const date = new Date(item.startDate);
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       startTime = `${hours}:${minutes}`;
+    }
+
+    if (item.endDate) {
+      const date = new Date(item.endDate);
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      endTime = `${hours}:${minutes}`;
     }
 
     setEditCart({
@@ -70,12 +157,14 @@ const CartPage = () => {
       rentalDuration: item.rentalDuration,
       rentalValue: item.rentalValue,
       startDate: item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '',
-      startTime: startTime, // Store time separately for both equipment and services
+      startTime: startTime,
+      endDate: item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '',
+      endTime: endTime,
       visitTimings: item.visitTimings || [],
-      isService: !!item.servicesId, // Track if it's a service
+      isService: !!item.servicesId,
     });
     setShowEditModal(true);
-    setOpenEditIndex(null); // Close the three-dots menu
+    setOpenEditIndex(null);
   };
   const updateQuantity = async (cartId, qty) => {
     if (qty < 1) return;
@@ -112,16 +201,31 @@ const CartPage = () => {
   };
   const saveEditCart = async () => {
     try {
-      const { _id, isService, startTime, ...payload } = editCart;
+      const { _id, isService, startTime, endTime, ...payload } = editCart;
 
-      // Format startDate properly - combine date and time if time is provided
-      if (payload.startDate) {
-        if (startTime) {
-          // Combine date and time for both equipment and services
-          payload.startDate = new Date(`${payload.startDate}T${startTime}`).toISOString();
-        } else {
-          // Just date if no time specified
-          payload.startDate = new Date(payload.startDate).toISOString();
+      if (payload.startDate && payload.endDate) {
+        const startDateTime = new Date(`${payload.startDate}T${startTime || '00:00'}`);
+        const endDateTime = new Date(`${payload.endDate}T${endTime || '00:00'}`);
+
+        if (endDateTime <= startDateTime) {
+          alert('End date/time must be after start date/time');
+          return;
+        }
+
+        payload.startDate = startDateTime.toISOString();
+        payload.endDate = endDateTime.toISOString();
+
+        const diffMs = endDateTime - startDateTime;
+        const rDuration = payload.rentalDuration.toLowerCase();
+
+        if (rDuration === "perhour") {
+          payload.rentalValue = Math.ceil(diffMs / (1000 * 60 * 60));
+        } else if (rDuration === "perday") {
+          payload.rentalValue = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        } else if (rDuration === "perweek") {
+          payload.rentalValue = Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7));
+        } else if (rDuration === "permonth") {
+          payload.rentalValue = Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30));
         }
       }
 
@@ -242,8 +346,24 @@ const CartPage = () => {
                         <p className="text-[12px] leading-[20px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-bold">
                           Start Date:{" "}
                           <span className="font-normal">
-                            {new Date(data.startDate).toLocaleDateString(
+                            {new Date(data.startDate).toLocaleString(
                               "en-IN",
+                              {
+                                dateStyle: "short",
+                                timeStyle: "short"
+                              }
+                            )}
+                          </span>
+                        </p>
+                        <p className="text-[12px] leading-[20px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-bold">
+                          End Date:{" "}
+                          <span className="font-normal">
+                            {new Date(data.endDate).toLocaleString(
+                              "en-IN",
+                              {
+                                dateStyle: "short",
+                                timeStyle: "short"
+                              }
                             )}
                           </span>
                         </p>
@@ -370,20 +490,25 @@ const CartPage = () => {
                         <p className="text-[12px] leading-[20px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-bold">
                           Start Date:{" "}
                           <span className="font-normal">
-                            {new Date(data.startDate).toLocaleDateString(
+                            {new Date(data.startDate).toLocaleString(
                               "en-IN",
+                              {
+                                dateStyle: "short",
+                                timeStyle: "short"
+                              }
                             )}
                           </span>
                         </p>
-                        <p className="text-[12px] leading-[20px] tracking-[0.48px] md:text-[14px] md:leading-[26px] md:tracking-[0.56px] font-bold">
-                          Time:{" "}
+                        <p className="text-[12px] leading-[20px] tracking-[0.48px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-bold">
+                          End Date:{" "}
                           <span className="font-normal">
-                            {data.visitTimings && data.visitTimings.length > 0
-                              ? data.visitTimings.join(", ")
-                              : new Date(data.startDate).toLocaleTimeString(
-                                "en-IN",
-                                { hour: "2-digit", minute: "2-digit" },
-                              )}
+                            {new Date(data.endDate).toLocaleString(
+                              "en-IN",
+                              {
+                                dateStyle: "short",
+                                timeStyle: "short"
+                              }
+                            )}
                           </span>
                         </p>
                         <p className="text-[12px] leading-[20px] tracking-[0.48px] md:text-[14px] md:leading-[26px] md:tracking-[0.56px] font-bold">
@@ -514,10 +639,79 @@ const CartPage = () => {
               ))}
 
             <div className="py-3 flex flex-col gap-4 md:gap-6">
-              {/* <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-medium font-outfit ">
-                Have a Coupons?{" "}
-                <span className="text-[#A2CD48]">Apply Here</span>
-              </p> */}
+              {/* Coupon Section */}
+              <div className="flex flex-col gap-4">
+                {appliedCoupon ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex justify-between items-center">
+                    <div>
+                      <p className="text-green-700 font-semibold text-[14px]">
+                        ✓ Coupon Applied: {appliedCoupon.code}
+                      </p>
+                      <p className="text-green-600 text-[12px]">
+                        You saved ₹{appliedCoupon.discount}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-red-500 text-[12px] font-semibold hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowCouponModal(true)}
+                      className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-medium font-outfit text-left"
+                    >
+                      Have a Coupon?{" "}
+                      <span className="text-[#A2CD48] cursor-pointer hover:text-[#8fb83d]">
+                        View Available Coupons
+                      </span>
+                    </button>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter coupon code"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-[14px] font-semibold uppercase"
+                      />
+                      <button
+                        onClick={() => handleApplyCoupon(couponCode)}
+                        disabled={couponLoading || !couponCode}
+                        className="bg-[#A2CD48] text-white px-6 py-2 rounded-lg text-[14px] font-semibold disabled:opacity-50 hover:bg-[#8fb83d] transition-colors"
+                      >
+                        {couponLoading ? "Applying..." : "Apply"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {appliedCoupon && (
+                <div className="flex justify-between font-outfit">
+                  <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold">
+                    Subtotal:
+                  </p>
+                  <p className="text-[16px] tracking-[0.32px] md:text-[20px] md:tracking-[0.4px] font-semibold">
+                    ₹{appliedCoupon.originalAmount.toFixed(2)}
+                  </p>
+                </div>
+              )}
+
+              {appliedCoupon && (
+                <div className="flex justify-between font-outfit text-green-600">
+                  <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold">
+                    Discount ({appliedCoupon.code}):
+                  </p>
+                  <p className="text-[16px] tracking-[0.32px] md:text-[20px] md:tracking-[0.4px] font-semibold">
+                    -₹{appliedCoupon.discount.toFixed(2)}
+                  </p>
+                </div>
+              )}
+
               <div className="flex justify-between font-outfit">
                 <p className="text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold">
                   Total Amount :
@@ -592,6 +786,7 @@ const CartPage = () => {
                         cartItems: updatedCartItems.filter((item) =>
                           selectedItems.includes(item._id)
                         ),
+                        cartTotalAmount: totalAmount, // Pass final total from cart
                       }
                     });
                   }
@@ -621,30 +816,6 @@ const CartPage = () => {
             </h2>
 
             <div className="flex flex-col gap-4">
-              {/* Quantity */}
-              <div>
-                <label className="block text-[14px] md:text-[16px] font-semibold mb-2">
-                  Quantity
-                </label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => changeEditQty("dec")}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg text-xl font-bold"
-                  >
-                    -
-                  </button>
-                  <span className="text-[18px] font-semibold min-w-[40px] text-center">
-                    {editCart.cartquantity}
-                  </span>
-                  <button
-                    onClick={() => changeEditQty("inc")}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg text-xl font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
               {/* Rental Duration */}
               <div>
                 <label className="block text-[14px] md:text-[16px] font-semibold mb-2">
@@ -675,25 +846,6 @@ const CartPage = () => {
                     </>
                   )}
                 </select>
-              </div>
-
-              {/* Rental Value */}
-              <div>
-                <label className="block text-[14px] md:text-[16px] font-semibold mb-2">
-                  Rental Value
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={editCart.rentalValue}
-                  onChange={(e) =>
-                    setEditCart((prev) => ({
-                      ...prev,
-                      rentalValue: parseInt(e.target.value) || 1,
-                    }))
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#34658C]"
-                />
               </div>
 
               {/* Start Date */}
@@ -733,50 +885,42 @@ const CartPage = () => {
                 />
               </div>
 
-              {/* Visit Timings - Only for services */}
-              {editCart.isService && (
-                <div>
-                  <label className="block text-[14px] md:text-[16px] font-semibold mb-2">
-                    Visit Timings
-                  </label>
-                  <div className="flex flex-wrap gap-3">
-                    {['Morning', 'Afternoon', 'Evening', 'Night'].map((timing) => (
-                      <label
-                        key={timing}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={editCart.visitTimings.includes(timing)}
-                          onChange={(e) => {
-                            setEditCart((prev) => {
-                              if (e.target.checked) {
-                                // Add timing if checked
-                                return {
-                                  ...prev,
-                                  visitTimings: [...prev.visitTimings, timing],
-                                };
-                              } else {
-                                // Remove timing if unchecked
-                                return {
-                                  ...prev,
-                                  visitTimings: prev.visitTimings.filter(
-                                    (t) => t !== timing
-                                  ),
-                                };
-                              }
-                            });
-                          }}
-                          className="w-4 h-4 cursor-pointer accent-[#34658C]"
-                        />
-                        <span className="text-[14px] md:text-[16px]">
-                          {timing}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* End Date */}
+              <div>
+                <label className="block text-[14px] md:text-[16px] font-semibold mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={editCart.endDate || ''}
+                  onChange={(e) =>
+                    setEditCart((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  min={editCart.startDate || new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#34658C]"
+                />
+              </div>
+
+              {/* End Time */}
+              <div>
+                <label className="block text-[14px] md:text-[16px] font-semibold mb-2">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  value={editCart.endTime || ''}
+                  onChange={(e) =>
+                    setEditCart((prev) => ({
+                      ...prev,
+                      endTime: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#34658C]"
+                />
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -799,8 +943,84 @@ const CartPage = () => {
             </div>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+
+      {/* Coupon Modal */}
+      {
+        showCouponModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-[24px] max-w-[600px] w-full max-h-[80vh] overflow-y-auto p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-[24px] font-semibold">Available Coupons</h2>
+                <button
+                  onClick={() => setShowCouponModal(false)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <IoMdClose className="w-[28px] h-[28px]" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {coupons.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">
+                    No coupons available at the moment
+                  </p>
+                ) : (
+                  coupons.map((coupon) => {
+                    const isEligible = totalAmount >= coupon.minimumamount;
+                    const amountNeeded = coupon.minimumamount - totalAmount;
+
+                    return (
+                      <div
+                        key={coupon._id}
+                        className="border border-[#34658C] rounded-[12px] p-4 hover:bg-[#EBF0F4] transition-colors"
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="bg-[#34658C] text-white px-3 py-1 rounded-full text-[14px] font-bold">
+                                {coupon.couponCode}
+                              </span>
+                              {coupon.isUniversal && (
+                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-[12px]">
+                                  Universal
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[18px] font-semibold text-[#A2CD48] mb-1">
+                              Save ₹{coupon.discountamount}
+                            </p>
+                            <p className="text-[12px] text-gray-600">
+                              Min. order: ₹{coupon.minimumamount}
+                            </p>
+                            <p className="text-[12px] text-gray-500">
+                              Valid till: {new Date(coupon.expireDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleApplyCoupon(coupon.couponCode)}
+                            disabled={couponLoading || !isEligible}
+                            className="bg-[#A2CD48] text-white px-4 py-2 rounded-lg text-[14px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#8fb83d] transition-colors"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                        {!isEligible && amountNeeded > 0 && (
+                          <p className="text-red-500 text-[12px] mt-2">
+                            Add ₹{amountNeeded.toFixed(2)} more to use this coupon
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

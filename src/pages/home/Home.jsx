@@ -141,7 +141,7 @@ const Home = () => {
   useEffect(() => {
     const fetchAllServices = async () => {
       try {
-        const response = await getAllNursesApi(1, 1000); // Fetch large limit to match IDs
+        const response = await getAllNursesApi(1, 10); // Fetch large limit to match IDs
         if (response.data && response.data.data) {
           setAllServices(response.data.data);
         }
@@ -497,10 +497,10 @@ const Home = () => {
                                   <button
                                     className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                                     onClick={() => {
-                                      if (!isAuthenticated) {
-                                        toast.error('Please login to book service');
-                                        return;
-                                      }
+                                      // if (!isAuthenticated) {
+                                      //   toast.error('Please login to book service');
+                                      //   return;
+                                      // }
                                       navigate(`/nurse-detail/${service._id}`);
                                     }}
                                   >
@@ -671,10 +671,10 @@ const Home = () => {
                                 <button
                                   className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                                   onClick={() => {
-                                    if (!isAuthenticated) {
-                                      toast.error('Please login to add items to cart');
-                                      return;
-                                    }
+                                    // if (!isAuthenticated) {
+                                    //   toast.error('Please login to add items to cart');
+                                    //   return;
+                                    // }
                                     setSelectedEquipment(data);
                                     setSelectedItemType("equipment");
                                     setIsModalOpen(true);
@@ -685,10 +685,10 @@ const Home = () => {
                                 <button
                                   className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                                   onClick={() => {
-                                    if (!isAuthenticated) {
-                                      toast.error('Please login to rent equipment');
-                                      return;
-                                    }
+                                    // if (!isAuthenticated) {
+                                    //   toast.error('Please login to rent equipment');
+                                    //   return;
+                                    // }
                                     navigate(`/equipment/${data._id}`);
                                   }}
                                 >

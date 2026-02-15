@@ -242,7 +242,7 @@ export const searchCouponsApi = (keyword) => {
 // 28. APPLY COUPON (Direct Booking - Validation)
 // ==================
 export const applyCouponApi = (couponCode, selectedCartIds) => {
-  return axiosInstance.post("/Sehatmitra/user/apply/coupon", {
+  return axiosInstance.post("/user/apply/coupon", {
     couponCode,
     selectedCartIds,
   });
@@ -322,7 +322,11 @@ export const myorderApi = ({ status, page = 1, limit = 5 } = {}) => {
 };
 export const cancelOrderApi = (orderId) => {
   return axiosInstance.put(`/user/booking/cancel/${orderId}`);
-}
+};
+export const extendBookingApi = (bookingId, extensionData) => {
+  return axiosInstance.put(`/user/booking/extend/${bookingId}`, extensionData);
+};
+
 
 export const subscribeApi = (email) => {
   return axiosInstance.post("/user/subscribe", { email });

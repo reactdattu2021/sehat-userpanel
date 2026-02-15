@@ -551,10 +551,10 @@ const BookNurse = () => {
                             <button
                               className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                               onClick={() => {
-                                if (!isAuthenticated) {
-                                  toast.error('Please login to add items to cart');
-                                  return;
-                                }
+                                // if (!isAuthenticated) {
+                                //   toast.error('Please login to add items to cart');
+                                //   return;
+                                // }
                                 setSelectedNurse(nurse);
                                 setIsModalOpen(true);
                               }}
@@ -564,10 +564,10 @@ const BookNurse = () => {
                             <button
                               className="bg-[#A2CD48] text-white px-4 md:px-8  py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                               onClick={() => {
-                                if (!isAuthenticated) {
-                                  toast.error('Please login to book a nurse');
-                                  return;
-                                }
+                                // if (!isAuthenticated) {
+                                //   toast.error('Please login to book a nurse');
+                                //   return;
+                                // }
                                 navigate(`/nurse-detail/${nurse._id}`);
                               }}
                             >

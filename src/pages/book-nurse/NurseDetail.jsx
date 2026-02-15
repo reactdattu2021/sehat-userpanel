@@ -27,10 +27,11 @@ const NurseDetail = () => {
   // UI state
   const [selectedImg, setSelectedImg] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [days, setDays] = useState(1);
   const [rentalType, setRentalType] = useState("perHour");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("08:00"); // Default to 9 AM
+  const [fromDate, setFromDate] = useState("");
+  const [fromTime, setFromTime] = useState("08:00");
+  const [toDate, setToDate] = useState("");
+  const [toTime, setToTime] = useState("08:00");
   const [visitTime, setVisitTime] = useState("morning");
 
   // Fetch nurse details
@@ -72,28 +73,34 @@ const NurseDetail = () => {
     }
   }, [nurseId, navigate]);
 
-  const handleDecrease = (type) => {
-    if (type === "quantity" && quantity > 1) {
-      setQuantity(quantity - 1);
-    } else if (type === "days" && days > 1) {
-      setDays(days - 1);
-    }
-  };
+  const calculateRentalValue = () => {
+    if (!fromDate || !fromTime || !toDate || !toTime) return 1;
 
-  const handleIncrease = (type) => {
-    if (type === "quantity") {
-      setQuantity(quantity + 1);
-    } else if (type === "days") {
-      setDays(days + 1);
+    const fromDateTime = new Date(`${fromDate}T${fromTime}`);
+    const toDateTime = new Date(`${toDate}T${toTime}`);
+
+    if (toDateTime <= fromDateTime) return 1;
+
+    const diffMs = toDateTime - fromDateTime;
+
+    if (rentalType === "perHour") {
+      return Math.ceil(diffMs / (1000 * 60 * 60));
+    } else if (rentalType === "perDay") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    } else if (rentalType === "perWeek") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7));
+    } else if (rentalType === "perMonth") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30));
     }
+    return 1;
   };
 
   const calculateTotalAmount = () => {
     if (!nurse || !nurse.pricings) return 0;
 
-    // MATCH BACKEND CALCULATION EXACTLY
-    // Backend: const baseAmount = unitPrice * qty * rentalValue;
-    const baseAmount = (nurse.pricings[rentalType] || 0) * quantity * days;
+    const rentalValue = calculateRentalValue();
+
+    const baseAmount = (nurse.pricings[rentalType] || 0) * quantity * rentalValue;
 
     // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
     const taxAmount = (baseAmount * (nurse.pricings.taxPercentage || 0)) / 100;
@@ -113,29 +120,18 @@ const NurseDetail = () => {
   };
 
   const handleBookNow = () => {
-    // Check authentication first
-    // if (!isAuthenticated) {
-    //   toast.error("Please login to book a nurse");
-    //   // Save current location to return after login
-    //   localStorage.setItem('redirectAfterLogin', window.location.pathname);
-    //   // Dispatch custom event to open login modal
-    //   window.dispatchEvent(new CustomEvent('openLoginModal'));
-    //   return;
-    // }
-
-    // Validation
     if (!nurse) {
       toast.error('Nurse data not loaded');
       return;
     }
 
-    if (!selectedDate) {
-      toast.error('Please select a start date');
+    if (!fromDate || !fromTime) {
+      toast.error('Please select from date and time');
       return;
     }
 
-    if (!selectedTime) {
-      toast.error('Please select a start time');
+    if (!toDate || !toTime) {
+      toast.error('Please select to date and time');
       return;
     }
 
@@ -144,33 +140,30 @@ const NurseDetail = () => {
       return;
     }
 
-    if (days <= 0) {
-      toast.error('Please select valid number of days');
-      return;
-    }
-
-    // Check if visit time is required and selected
-    if (nurse.availableVisitTimings && !visitTime) {
-      toast.error('Please select visit time');
-      return;
-    }
-
-    // Check if pricing is available for selected rental type
     if (!nurse.pricings[rentalType]) {
       toast.error(`${rentalType} pricing not available for this service`);
       return;
     }
 
-    // Navigate to checkout with booking data
-    // Combine selected date and time into a single datetime
-    const [hours, minutes] = selectedTime.split(':');
-    const selectedDateTime = new Date(selectedDate);
-    selectedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const fromDateTime = new Date(`${fromDate}T${fromTime}`);
+    const toDateTime = new Date(`${toDate}T${toTime}`);
 
-    // Validate that the selected datetime is not in the past
+    if (toDateTime <= fromDateTime) {
+      toast.error('To date/time must be after from date/time');
+      return;
+    }
+
     const now = new Date();
-    if (selectedDateTime < now) {
+    if (fromDateTime < now) {
       toast.error('Please select a future date and time');
+      return;
+    }
+
+    const rentalValue = calculateRentalValue();
+
+    // Check authentication before proceeding to checkout
+    if (!isAuthenticated) {
+      toast.error('Please login to proceed with booking');
       return;
     }
 
@@ -183,13 +176,17 @@ const NurseDetail = () => {
           productName: nurse.fullName,
           productImage: nurse.profileImage,
           rentalDuration: rentalType,
-          rentalValue: days,
-          quantity: 1, // Services typically don't have quantity
-          startDate: selectedDateTime.toISOString(),
+          rentalValue: rentalValue,
+          quantity: 1,
+          startDate: fromDateTime.toISOString(),
+          fromDate: fromDate,
+          fromTime: fromTime,
+          toDate: toDate,
+          toTime: toTime,
           visitTimings: visitTime ? [visitTime] : [],
           pricing: {
             unitPrice: nurse.pricings[rentalType],
-            shippingCost: 0, // Services don't have shipping
+            shippingCost: 0,
             taxPercentage: nurse.pricings.taxPercentage || 0,
             securityDeposit: nurse.pricings.securityDeposit || 0
           }
@@ -231,20 +228,20 @@ const NurseDetail = () => {
     <>
       <div className="max-w-[1440px] mx-auto  px-5 md:px-[32px]  xl:px-[120px] pt-[40px] md:pt-[60px] pb-[60px] md:pb-[80px] xl:pb-[120px]">
         <div className="grid grid-cols-12 lg:grid-cols-12 gap-6 md:gap-[40px] xl:gap-[60px] pb-[60px] md:pb-[80px] xl:pb-[120px] ">
-          <div className="col-span-12 lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-[100px] self-start">
+          <div className="col-span-12 lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-[120px] self-start items-center lg:items-start">
             <img
               src={selectedImg}
               alt={nurse.fullName}
-              className="w-[300px] h-[300px] md:w-[386px] md:h-[386px] border-[1px] border-[#000000] rounded-[12px]"
+              className="w-full max-w-[386px] aspect-square object-cover border-[1px] border-[#000000] rounded-[12px]"
             />
 
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex gap-4 flex-wrap justify-center lg:justify-start">
               {allImages.map((img, index) => (
                 <img
                   key={index}
                   src={img}
                   alt={`${nurse.fullName} certificate ${index}`}
-                  className={`w-[87px] h-[87px] object-cover rounded-[12px] cursor-pointer border ${selectedImg === img
+                  className={`w-[70px] h-[70px] md:w-[87px] md:h-[87px] object-cover rounded-[12px] cursor-pointer border ${selectedImg === img
                     ? "border-[#000000]"
                     : "border-transparent"
                     }`}
@@ -254,7 +251,7 @@ const NurseDetail = () => {
               ))}
             </div>
             <button
-              className="bg-[#34658C] text-white px-[64px] py-4 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[20px] md:tracking-[0.4px] font-semibold w-full md:w-fit font-outfit"
+              className="bg-[#34658C] text-white py-4 rounded-[12px] text-[16px] md:text-[20px] font-semibold w-full max-w-[386px] font-outfit hover:bg-[#2a5270] transition-colors"
               onClick={() => setIsModalOpen(true)}
             >
               Add To Cart
@@ -372,7 +369,7 @@ const NurseDetail = () => {
               </div>
 
               {/* Visit Time Selection */}
-              {nurse.availableVisitTimings && (
+              {/* {nurse.availableVisitTimings && (
                 <div>
                   <h1 className="text-[16px] tracking-[0.32px] md:text-[20px] md:tracking-[0.4px] font-semibold mb-3 ">
                     Select Visit Time
@@ -428,55 +425,52 @@ const NurseDetail = () => {
                     )}
                   </div>
                 </div>
-              )}
+              )} */}
 
               <div className="max-w-[310px] md:max-w-[420px]">
-                <div className="flex justify-between mb-5">
-                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                    Choose {rentalType === "perHour" ? "Hours" : rentalType === "perDay" ? "Days" : rentalType === "perWeek" ? "Weeks" : "Months"}
+                <div className="flex justify-between items-center gap-3 mt-4">
+                  <p className="text-[14px] md:text-[16px] font-semibold">
+                    From Date
                   </p>
-                  <div className="flex gap-1 md:gap-2 justify-center items-center  ">
-                    <button
-                      className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleDecrease("days")}
-                    >
-                      <FaMinus className="text-[20px] text-[#333333] " />
-                    </button>
-                    <span className="text-sm md:text-xl font-semibold px-2">
-                      {days}
-                    </span>
-                    <button
-                      className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleIncrease("days")}
-                    >
-                      <FaPlus className="text-[20px] text-[#333333]" />
-                    </button>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
+
+                    <input
+                      type="time"
+                      value={fromTime}
+                      onChange={(e) => setFromTime(e.target.value)}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
                   </div>
                 </div>
-
-                <div className="flex justify-between items-center mb-4">
-                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]  font-semibold">
-                    Select Date
+                <div className="flex justify-between items-center gap-3 mt-4">
+                  <p className="text-[14px] md:text-[16px] font-semibold">
+                    To Date
                   </p>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
-                  />
-                </div>
 
-                <div className="flex justify-between items-center">
-                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]  font-semibold">
-                    Select Time
-                  </p>
-                  <input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      min={fromDate || new Date().toISOString().split("T")[0]}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
+
+                    <input
+                      type="time"
+                      value={toTime}
+                      onChange={(e) => setToTime(e.target.value)}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col gap-2">

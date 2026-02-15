@@ -4,6 +4,8 @@ import { IoMdArrowDropdown } from "react-icons/io";
 import { IoMdArrowDropup } from "react-icons/io";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { getBookingDetailsApi } from "../../apis/authapis";
 
 const Thankyou = () => {
@@ -74,6 +76,170 @@ const Thankyou = () => {
 
     const toggleAccordion = (index) => {
         setOpenIndex(openIndex === index ? null : index);
+    };
+// Premium Invoice PDF Generation yes done
+    const handleDownloadInvoice = () => {
+        try {
+            if (!bookingDetails) {
+                toast.error("No booking details available for download");
+                return;
+            }
+
+            const { shipping_address, payment, products, orderId, orderamount, createdAt } = bookingDetails;
+            const doc = new jsPDF();
+            const brandColor = [52, 101, 140]; // #34658C
+            const secondaryColor = [162, 205, 72]; // #A2CD48
+
+            // --- Header Section ---
+            // Background for Header
+            doc.setFillColor(...brandColor);
+            doc.rect(0, 0, 210, 40, "F");
+
+            // App Name / Logo Placeholder
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(28);
+            doc.setFont("helvetica", "bold");
+            doc.text("SehatMitra", 20, 25);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Professional Healthcare at your Doorstep", 20, 32);
+
+            // "INVOICE" Title
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text("INVOICE", 190, 25, { align: "right" });
+
+            // --- Company & Order Info Section ---
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+
+            // Left Side: Company Info
+            let currentY = 55;
+            doc.setFont("helvetica", "bold");
+            doc.text("From:", 20, currentY);
+            doc.setFont("helvetica", "normal");
+            doc.text("SehatMitra Services Pvt Ltd", 20, currentY + 5);
+            doc.text("Hitech City, Hyderabad", 20, currentY + 10);
+            doc.text("Telangana, 500081", 20, currentY + 15);
+            doc.text("Contact: support@sehatmitra.com", 20, currentY + 20);
+
+            // Right Side: Order Info
+            doc.setFont("helvetica", "bold");
+            doc.text("Invoice Details:", 130, currentY);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Invoice #: INV-${orderId?.slice(-6) || "N/A"}`, 130, currentY + 5);
+            doc.text(`Order ID: ${orderId || "N/A"}`, 130, currentY + 10);
+            doc.text(`Date: ${formatDate(createdAt)}`, 130, currentY + 15);
+            doc.text(`Payment Mode: ${payment?.status === "paid" ? "Online Payment" : location.state?.paymentMode || "N/A"}`, 130, currentY + 20);
+
+            // --- Billing/Shipping Section ---
+            currentY += 35;
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, currentY - 5, 190, currentY - 5);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Bill To:", 20, currentY);
+            doc.setFont("helvetica", "normal");
+            doc.text(shipping_address?.fullname || "Valued Customer", 20, currentY + 5);
+
+            const streetAddr = Array.isArray(shipping_address?.streetAddress)
+                ? shipping_address.streetAddress.join(", ")
+                : (shipping_address?.streetAddress || "");
+
+            const addressLines = doc.splitTextToSize(
+                `${streetAddr}, ${shipping_address?.city || ""}, ${shipping_address?.state || ""}, ${shipping_address?.pincode || ""}`,
+                80
+            );
+            doc.text(addressLines, 20, currentY + 10);
+
+            // --- Products Table ---
+            const tableData = products?.map((product, index) => [
+                index + 1,
+                product.productname || product.details?.equipmentName || "Service / Equipment",
+                `${product.productquantity || product.cartquantity || 1}`,
+                `INR ${product.productprice?.toFixed(2) || "0.00"}`,
+                `INR ${((product.productprice || 0) * (product.productquantity || product.cartquantity || 1)).toFixed(2)}`
+            ]) || [];
+
+            autoTable(doc, {
+                startY: currentY + 30,
+                head: [["S.No", "Item Description", "Qty", "Unit Price", "Subtotal"]],
+                body: tableData,
+                headStyles: {
+                    fillColor: brandColor,
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                    halign: "center"
+                },
+                columnStyles: {
+                    0: { halign: "center", cellWidth: 15 },
+                    1: { halign: "left" },
+                    2: { halign: "center", cellWidth: 20 },
+                    3: { halign: "right", cellWidth: 35 },
+                    4: { halign: "right", cellWidth: 35 }
+                },
+                theme: "grid",
+                styles: { fontSize: 9, cellPadding: 5 }
+            });
+
+            // --- Summary Section ---
+            let finalY = doc.lastAutoTable.finalY + 10;
+
+            // Check if we need a new page for the summary
+            if (finalY > 250) {
+                doc.addPage();
+                finalY = 20;
+            }
+
+            const summaryX = 130;
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            const baseAmount = products?.reduce((acc, p) => acc + ((p.productprice || 0) * (p.productquantity || p.cartquantity || 1)), 0) || 0;
+            const totalTaxAmount = products?.reduce((acc, p) => acc + (((p.productprice || 0) * (p.productquantity || p.cartquantity || 1) * (p.taxpercentage || 0)) / 100), 0) || 0;
+            const totalShipping = products?.reduce((acc, p) => acc + ((p.shippingcost || 0) * (p.productquantity || p.cartquantity || 1)), 0) || 0;
+            const totalSecurity = products?.reduce((acc, p) => acc + ((p.securityDeposit || 0) * (p.productquantity || p.cartquantity || 1)), 0) || 0;
+
+            doc.text("Subtotal:", summaryX, finalY);
+            doc.text(`INR ${baseAmount.toFixed(2)}`, 190, finalY, { align: "right" });
+
+            doc.text("Tax/Other Charges:", summaryX, finalY + 7);
+            doc.text(`INR ${totalTaxAmount.toFixed(2)}`, 190, finalY + 7, { align: "right" });
+
+            if (totalShipping > 0) {
+                doc.text("Shipping Cost:", summaryX, finalY + 14);
+                doc.text(`INR ${totalShipping.toFixed(2)}`, 190, finalY + 14, { align: "right" });
+                finalY += 7;
+            }
+
+            if (totalSecurity > 0) {
+                doc.text("Security Deposit:", summaryX, finalY + 14);
+                doc.text(`INR ${totalSecurity.toFixed(2)}`, 190, finalY + 14, { align: "right" });
+                finalY += 7;
+            }
+
+            // Total Amount Box
+            doc.setFillColor(...secondaryColor);
+            doc.rect(summaryX - 5, finalY + 18, 65, 10, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.text("GRAND TOTAL:", summaryX, finalY + 25);
+            doc.text(`INR ${(payment?.amount || orderamount || 0).toFixed(2)}`, 190, finalY + 25, { align: "right" });
+
+            // --- Footer ---
+            doc.setTextColor(150, 150, 150);
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "italic");
+            doc.text("Thank you for choosing SehatMitra! We wish you a speedy recovery.", 105, 280, { align: "center" });
+            doc.text("This is a computer generated invoice and does not require a signature.", 105, 285, { align: "center" });
+
+            doc.save(`SehatMitra_Invoice_${orderId || "Order"}.pdf`);
+            toast.success("Invoice downloaded with premium layout!");
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+            toast.error("Failed to generate premium invoice PDF");
+        }
     };
 
     if (loading) {
@@ -317,7 +483,10 @@ const Thankyou = () => {
                         </div>
                     </div>
                     <div className="flex justify-end">
-                        <button className="font-outfit bg-[#34658C] px-6 py-3 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold text-white">
+                        <button
+                            onClick={handleDownloadInvoice}
+                            className="font-outfit bg-[#34658C] px-6 py-3 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold text-white hover:bg-[#2a5272] transition-colors"
+                        >
                             Download Invoice
                         </button>
                     </div>

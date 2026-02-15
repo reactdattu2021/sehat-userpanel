@@ -24,10 +24,11 @@ const EquipmentDetail = () => {
   // UI state
   const [selectedImg, setSelectedImg] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [days, setDays] = useState(1);
   const [rentalType, setRentalType] = useState("perDay");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("08:00");
+  const [fromDate, setFromDate] = useState("");
+  const [fromTime, setFromTime] = useState("08:00");
+  const [toDate, setToDate] = useState("");
+  const [toTime, setToTime] = useState("08:00");
 
   // Fetch equipment details
   useEffect(() => {
@@ -56,65 +57,74 @@ const EquipmentDetail = () => {
     }
   }, [equipmentId, navigate]);
 
+  const calculateRentalValue = () => {
+    if (!fromDate || !fromTime || !toDate || !toTime) return 1;
+
+    const fromDateTime = new Date(`${fromDate}T${fromTime}`);
+    const toDateTime = new Date(`${toDate}T${toTime}`);
+
+    if (toDateTime <= fromDateTime) return 1;
+
+    const diffMs = toDateTime - fromDateTime;
+
+    if (rentalType === "perHour") {
+      return Math.ceil(diffMs / (1000 * 60 * 60));
+    } else if (rentalType === "perDay") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    } else if (rentalType === "perWeek") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7));
+    } else if (rentalType === "perMonth") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30));
+    }
+    return 1;
+  };
+
   const handleDecrease = (type) => {
     if (type === "quantity" && quantity > 1) {
       setQuantity(quantity - 1);
-    } else if (type === "days" && days > 1) {
-      setDays(days - 1);
     }
   };
 
   const handleIncrease = (type) => {
     if (type === "quantity") {
       setQuantity(quantity + 1);
-    } else if (type === "days") {
-      setDays(days + 1);
     }
   };
 
   const calculateTotalRent = () => {
     if (!equipment) return 0;
 
-    // MATCH BACKEND CALCULATION EXACTLY
-    // Backend: const baseAmount = unitPrice * qty * rentalValue;
-    const baseAmount = (equipment.pricings[rentalType] || 0) * quantity * days;
+    const rentalValue = calculateRentalValue();
 
-    // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
-    const taxAmount = (baseAmount * (equipment.pricings.taxPercentage || 0)) / 100;
+    const baseAmount = (equipment.pricings[rentalType] || 0) * quantity * rentalValue;
 
-    // Backend: const safeShipping = productType === "services" ? 0 : shippingCost;
-    // Backend: totalAmount includes (safeShipping * qty)
+    const taxAmount =
+      (baseAmount * (equipment.pricings.taxPercentage || 0)) / 100;
+
     const safeShipping = equipment.pricings.shippingCost || 0;
     const shippingCost = safeShipping * quantity;
 
-    // Backend: const securityDeposit = (pricingDoc.pricings.securityDeposit || 0) * qty;
-    const securityDeposit = (equipment.pricings.securityDeposit || 0) * quantity;
+    const securityDeposit =
+      (equipment.pricings.securityDeposit || 0) * quantity;
 
-    // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
     const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
 
     return totalAmount;
   };
 
   const handleRentNow = () => {
-    // Check authentication first
-    // if (!isAuthenticated) {
-    //   toast.error("Please login to rent equipment");
-    //   return;
-    // }
-
-    // Validation
     if (!equipment) {
       toast.error("Equipment data not loaded");
       return;
     }
 
-    if (!selectedDate) {
-      toast.error("Please select a start date");
+    if (!fromDate || !fromTime) {
+      toast.error("Please select from date and time");
       return;
     }
-    if (!selectedTime) {
-      toast.error("Please select start time");
+
+    if (!toDate || !toTime) {
+      toast.error("Please select to date and time");
       return;
     }
 
@@ -123,43 +133,37 @@ const EquipmentDetail = () => {
       return;
     }
 
-    if (days <= 0) {
-      toast.error("Please select valid number of days");
-      return;
-    }
-
     if (quantity <= 0) {
       toast.error("Quantity must be greater than 0");
       return;
     }
 
-    // Check if pricing is available for selected rental type
     if (!equipment.pricings[rentalType]) {
       toast.error(`${rentalType} pricing not available for this equipment`);
       return;
     }
 
-    // Navigate to checkout with booking data
-    // Create a date object that combines the selected date with current time
-    const [hours, minutes] = selectedTime.split(":");
-    const selectedDateTime = new Date(selectedDate);
-    selectedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const fromDateTime = new Date(`${fromDate}T${fromTime}`);
+    const toDateTime = new Date(`${toDate}T${toTime}`);
 
-    // PREVENT PAST DATE/TIME
+    if (toDateTime <= fromDateTime) {
+      toast.error("To date/time must be after from date/time");
+      return;
+    }
+
     const now = new Date();
-    if (selectedDateTime < now) {
+    if (fromDateTime < now) {
       toast.error("Please select a future date and time");
       return;
     }
 
-    // Set the time to current time + 5 minutes buffer to avoid "past date" errors
-    // This accounts for time spent in checkout/payment process
-    selectedDateTime.setHours(
-      now.getHours(),
-      now.getMinutes() + 5,
-      now.getSeconds(),
-      now.getMilliseconds(),
-    );
+    const rentalValue = calculateRentalValue();
+
+    // Check authentication before proceeding to checkout
+    if (!isAuthenticated) {
+      toast.error('Please login to proceed with booking');
+      return;
+    }
 
     navigate("/checkout", {
       state: {
@@ -170,9 +174,13 @@ const EquipmentDetail = () => {
           productName: equipment.equipmentName,
           productImage: equipment.profileImage,
           rentalDuration: rentalType,
-          rentalValue: days,
+          rentalValue: rentalValue,
           quantity: quantity,
-          startDate: selectedDateTime.toISOString(),
+          startDate: fromDateTime.toISOString(),
+          fromDate: fromDate,
+          fromTime: fromTime,
+          toDate: toDate,
+          toTime: toTime,
           pricing: {
             unitPrice: equipment.pricings[rentalType],
             shippingCost: equipment.pricings.shippingCost || 0,
@@ -307,29 +315,53 @@ const EquipmentDetail = () => {
                 </p>
               </div>
               <div className="max-w-[310px] md:max-w-[420px]">
-                <div className="flex justify-between mb-5">
-                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                    Choose {rentalType === "perDay" ? "Days" : rentalType === "perWeek" ? "Weeks" : "Months"}
+                <div className="flex justify-between items-center gap-3 mt-4">
+                  <p className="text-[14px] md:text-[16px] font-semibold">
+                    From Date
                   </p>
-                  <div className="flex gap-1 md:gap-2 justify-center items-center ">
-                    <button
-                      className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleDecrease("days")}
-                    >
-                      <FaMinus className="text-[20px] text-[#333333] " />
-                    </button>
-                    <span className="text-sm md:text-xl font-semibold px-2">
-                      {days}
-                    </span>
-                    <button
-                      className="w-[28px] h-[28px] md:w-[36px] md:h-[36px] bg-[#A2CD48]  rounded-full flex justify-center items-center p-3"
-                      onClick={() => handleIncrease("days")}
-                    >
-                      <FaPlus className="text-[20px] text-[#333333]" />
-                    </button>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
+
+                    <input
+                      type="time"
+                      value={fromTime}
+                      onChange={(e) => setFromTime(e.target.value)}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
                   </div>
                 </div>
-                <div className="flex justify-between mb-4">
+                <div className="flex justify-between items-center gap-3 mt-4">
+                  <p className="text-[14px] md:text-[16px] font-semibold">
+                    To Date
+                  </p>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      min={fromDate || new Date().toISOString().split("T")[0]}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
+
+                    <input
+                      type="time"
+                      value={toTime}
+                      onChange={(e) => setToTime(e.target.value)}
+                      className="border px-3 py-2 rounded-[8px]"
+                    />
+                  </div>
+                </div>
+
+
+                <div className="flex justify-between mt-4">
                   <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
                     Quantity
                   </p>
@@ -351,30 +383,8 @@ const EquipmentDetail = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                    Select Date
-                  </p>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px] text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px]"
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
-                    Select Time
-                  </p>
-                  <input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="border-[1px] border-[#3D3D3D] px-3 py-2 rounded-[8px]"
-                  />
-                </div>
               </div>
+
               <div className="flex flex-col gap-2">
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
                   Total Rent Amount:{" "}
@@ -386,21 +396,34 @@ const EquipmentDetail = () => {
                   Tax ({equipment.pricings.taxPercentage || 0}%):
                   <span className="text-[#666666]">
                     {" "}
-                    ₹{(((equipment.pricings[rentalType] || 0) * quantity * days * (equipment.pricings.taxPercentage || 0)) / 100).toLocaleString()}
+                    ₹
+                    {(
+                      ((equipment.pricings[rentalType] || 0) *
+                        quantity *
+                        calculateRentalValue() *
+                        (equipment.pricings.taxPercentage || 0)) /
+                      100
+                    ).toLocaleString()}
                   </span>
                 </p>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
                   Shipping Cost:
                   <span className="text-[#666666]">
                     {" "}
-                    ₹{((equipment.pricings.shippingCost || 0) * quantity).toLocaleString()}
+                    ₹
+                    {(
+                      (equipment.pricings.shippingCost || 0) * quantity
+                    ).toLocaleString()}
                   </span>
                 </p>
                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] tracking-[0.64px] font-semibold">
                   Security Deposit:
                   <span className="text-[#666666]">
                     {" "}
-                    ₹{((equipment.pricings.securityDeposit || 0) * quantity).toLocaleString()}
+                    ₹
+                    {(
+                      (equipment.pricings.securityDeposit || 0) * quantity
+                    ).toLocaleString()}
                   </span>
                 </p>
               </div>
@@ -518,7 +541,6 @@ const EquipmentDetail = () => {
             />
           </div>
         </div>
-
       </div>
 
       {/* Add To Cart Modal */}

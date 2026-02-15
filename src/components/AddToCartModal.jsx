@@ -7,12 +7,13 @@ import { addToCartApi, getEquipmentByIdApi, getNurseByIdApi } from "../apis/auth
 const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
   // UI state
   const [quantity, setQuantity] = useState(1);
-  const [days, setDays] = useState(1);
   const [rentalType, setRentalType] = useState(
     itemType === "equipment" ? "perDay" : "perHour",
   );
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("09:00");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("09:00");
   const [visitTime, setVisitTime] = useState("morning");
   const [loading, setLoading] = useState(false);
   const [fullItemData, setFullItemData] = useState(null);
@@ -22,10 +23,11 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
   useEffect(() => {
     if (isOpen && itemData) {
       setQuantity(itemType === "equipment" ? 1 : 1);
-      setDays(1);
       setRentalType(itemType === "equipment" ? "perDay" : "perHour");
       setSelectedDate("");
       setSelectedTime("09:00");
+      setEndDate("");
+      setEndTime("09:00");
       setVisitTime("morning");
       setFullItemData(null);
     }
@@ -79,41 +81,54 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
   // Use fullItemData if available, otherwise use itemData
   const displayData = fullItemData || itemData;
 
+  const calculateRentalValue = () => {
+    if (!selectedDate || !selectedTime || !endDate || !endTime) return 1;
+
+    const fromDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const toDateTime = new Date(`${endDate}T${endTime}`);
+
+    if (toDateTime <= fromDateTime) return 1;
+
+    const diffMs = toDateTime - fromDateTime;
+
+    if (rentalType === "perHour") {
+      return Math.ceil(diffMs / (1000 * 60 * 60));
+    } else if (rentalType === "perDay") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    } else if (rentalType === "perWeek") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7));
+    } else if (rentalType === "perMonth") {
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30));
+    }
+    return 1;
+  };
+
   const handleDecrease = (type) => {
     if (type === "quantity" && quantity > 1) {
       setQuantity(quantity - 1);
-    } else if (type === "days" && days > 1) {
-      setDays(days - 1);
     }
   };
 
   const handleIncrease = (type) => {
     if (type === "quantity") {
       setQuantity(quantity + 1);
-    } else if (type === "days") {
-      setDays(days + 1);
     }
   };
 
   const calculateTotalAmount = () => {
     if (!displayData || !displayData.pricings) return 0;
 
-    // MATCH BACKEND CALCULATION EXACTLY
-    // Backend: const baseAmount = unitPrice * qty * rentalValue;
-    const baseAmount = (displayData.pricings[rentalType] || 0) * quantity * days;
+    const rentalValue = calculateRentalValue();
 
-    // Backend: const taxAmount = (baseAmount * pricing.taxPercentage) / 100;
+    const baseAmount = (displayData.pricings[rentalType] || 0) * quantity * rentalValue;
+
     const taxAmount = (baseAmount * (displayData.pricings.taxPercentage || 0)) / 100;
 
-    // Backend: const safeShipping = productType === "services" ? 0 : shippingCost;
-    // Backend: totalAmount includes (safeShipping * qty)
     const safeShipping = itemType === "services" ? 0 : (displayData.pricings.shippingCost || 0);
     const shippingCost = safeShipping * quantity;
 
-    // Backend: const securityDeposit = (pricingDoc.pricings.securityDeposit || 0) * qty;
     const securityDeposit = (displayData.pricings.securityDeposit || 0) * quantity;
 
-    // Backend: totalAmount = baseAmount + taxAmount + (safeShipping * qty) + securityDeposit;
     const totalAmount = baseAmount + taxAmount + shippingCost + securityDeposit;
 
     return totalAmount;
@@ -134,15 +149,20 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
     }
     console.log("Selected Time:", selectedTime);
 
+    if (!endDate) {
+      toast.error("Please select an end date");
+      return;
+    }
+
+    if (!endTime) {
+      toast.error("Please select an end time");
+      return;
+    }
+
     if (!rentalType) {
       toast.error(
         `Please select ${itemType === "equipment" ? "rental" : "service"} duration`,
       );
-      return;
-    }
-
-    if (days <= 0) {
-      toast.error("Please select valid number of days");
       return;
     }
 
@@ -198,11 +218,19 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
       }
     }
 
-    // Prepare API payload based on item type
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+    if (endDateTime <= startDateTime) {
+      toast.error("End date/time must be after start date/time");
+      return;
+    }
+
+    const rentalValue = calculateRentalValue();
+
     const cartPayload = {
-      rentalDuration: rentalType, // Keep camelCase format (perDay, perHour, etc.)
+      rentalDuration: rentalType,
       startDate: startDateTime.toISOString(),
-      rentalValue: days,
+      endDate: endDateTime.toISOString(),
+      rentalValue: rentalValue,
       cartquantity: quantity,
     };
     console.log("Cart Payload before item ID:", cartPayload);
@@ -266,7 +294,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
         </div>
 
         {/* Content - Logical flow */}
-        <div className="p-4 overflow-hidden">
+        <div className="p-4 overflow-y-auto">
           {/* Show loading state while fetching pricing details */}
           {fetchingDetails && (
             <div className="flex justify-center items-center py-10">
@@ -402,33 +430,35 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
                   />
                 </div>
               </div>
-
-              {/* 4. Quantity & Days Selection */}
               <div className="grid grid-cols-2 gap-3.5 mb-3.5">
-                <div className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-[8px]">
-                  <span className="text-[13px] font-semibold text-[#34658C]">
-                    Number of {rentalType === "perHour" ? "Hours" : rentalType === "perDay" ? "Days" : rentalType === "perWeek" ? "Weeks" : "Months"}
-                  </span>
-                  <div className="flex gap-2 items-center">
-                    <button
-                      className="w-[28px] h-[28px] bg-[#A2CD48] rounded-full flex justify-center items-center hover:bg-[#8fb83d] transition-colors"
-                      onClick={() => handleDecrease("days")}
-                    >
-                      <FaMinus className="text-[12px] text-[#333333]" />
-                    </button>
-                    <span className="text-[16px] font-semibold w-9 text-center">
-                      {days}
-                    </span>
-                    <button
-                      className="w-[28px] h-[28px] bg-[#A2CD48] rounded-full flex justify-center items-center hover:bg-[#8fb83d] transition-colors"
-                      onClick={() => handleIncrease("days")}
-                    >
-                      <FaPlus className="text-[12px] text-[#333333]" />
-                    </button>
-                  </div>
+                <div>
+                  <label className="text-[13px] font-semibold block mb-1.5 text-[#34658C]">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={selectedDate || new Date().toISOString().split("T")[0]}
+                    className="border border-[#3D3D3D] px-2.5 py-2 rounded-[8px] text-[13px] w-full"
+                  />
                 </div>
+                <div>
+                  <label className="text-[13px] font-semibold block mb-1.5 text-[#34658C]">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="border border-[#3D3D3D] px-2.5 py-2 rounded-[8px] text-[13px] w-full"
+                  />
+                </div>
+              </div>
 
-                {itemType === "equipment" && (
+              {/* 4. Quantity Selection */}
+              {itemType === "equipment" && (
+                <div className="mb-3.5">
                   <div className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-[8px]">
                     <span className="text-[13px] font-semibold text-[#34658C]">
                       Quantity
@@ -451,11 +481,11 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* 5. Visit Time (Services only) */}
-              {itemType === "service" && displayData.availableVisitTimings && (
+              {/* {itemType === "service" && displayData.availableVisitTimings && (
                 <div className="mb-3.5">
                   <h4 className="text-[14px] font-semibold mb-2 text-[#34658C]">
                     Preferred Visit Time
@@ -515,7 +545,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
                     )}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* 6. Total Amount Summary */}
               <div className="bg-gradient-to-br from-[#34658C] to-[#2a5270] p-3.5 rounded-[9px] text-white mb-3.5">
@@ -529,7 +559,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
                   {displayData.pricings?.taxPercentage > 0 && (
                     <div className="flex justify-between">
                       <span>Tax ({displayData.pricings.taxPercentage}%):</span>
-                      <span>+ ₹{(((displayData.pricings[rentalType] || 0) * quantity * days * (displayData.pricings.taxPercentage || 0)) / 100).toLocaleString()}</span>
+                      <span>+ ₹{(((displayData.pricings[rentalType] || 0) * quantity * calculateRentalValue() * (displayData.pricings.taxPercentage || 0)) / 100).toLocaleString()}</span>
                     </div>
                   )}
                   {displayData.pricings?.securityDeposit > 0 && (

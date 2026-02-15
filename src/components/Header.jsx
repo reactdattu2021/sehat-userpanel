@@ -68,6 +68,7 @@ const Header = () => {
   const handleLogout = () => {
     logout();
     setMenuOpen(false);
+    navigate("/");//yes
   };
 
   const handleProfileClick = () => {
@@ -210,7 +211,7 @@ const Header = () => {
                           className="bg-white px-6 py-2 rounded-[12px] flex gap-2 items-center cursor-pointer"
                           onClick={() => {
                             setMenuOpen(false);
-                            navigate('/profile');
+                            navigate('/myaccount');//yes
                           }}
                         >
                           <HiUser className="w-[20px] h-[20px] text-[#34658C]" />
