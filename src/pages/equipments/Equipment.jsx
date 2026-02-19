@@ -19,12 +19,15 @@ const Equipment = () => {
   const [selectedEquipment, setSelectedEquipment] = useState(null);
 
   // State for API data
+  // State for API data
   const [equipments, setEquipments] = useState([]);
+  const [allUniqueEquipments, setAllUniqueEquipments] = useState([]); // Store all unique subcategories here
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const limit = 10;
+  const fetchLimit = 150; // Fetch all (or large amount) to handle client-side unique filtering
+  const itemsPerPage = 10; // 10 unique subcategories per page
 
   // Get search query from URL
   const searchQuery = searchParams.get('search');
@@ -47,16 +50,29 @@ const Equipment = () => {
     priceRange: ""
   });
   const [isFilterActive, setIsFilterActive] = useState(false);
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   // Fetch dropdown data on mount
   useEffect(() => {
     fetchDropdownData();
   }, []);
 
-  // Fetch equipments on mount, page change, filter change, or search query change
+  // Fetch equipments on mount, filter change, search query change, or manual search trigger
   useEffect(() => {
-    fetchEquipments(currentPage);
-  }, [currentPage, isFilterActive, searchQuery]);
+    fetchEquipments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFilterActive, searchQuery, searchTrigger]);
+
+  // Handle client-side pagination
+  useEffect(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    if (allUniqueEquipments.length > 0) {
+      setEquipments(allUniqueEquipments.slice(start, end));
+    } else {
+      setEquipments([]);
+    }
+  }, [currentPage, allUniqueEquipments]);
 
   // Fetch dropdown data from API
   const fetchDropdownData = async () => {
@@ -93,15 +109,26 @@ const Equipment = () => {
     return Object.values(filters).some(value => value !== "");
   };
 
-  const fetchEquipments = async (page) => {
+  const processUniqueEquipments = (data) => {
+    const unique = data.filter((item, index, self) =>
+      index === self.findIndex((t) => t.subCategory === item.subCategory)
+    );
+    setAllUniqueEquipments(unique);
+    setTotalPages(Math.ceil(unique.length / itemsPerPage));
+    setTotal(unique.length);
+    setCurrentPage(1); // Reset to page 1 on new data fetch
+  };
+
+  const fetchEquipments = async () => {
     try {
       setLoading(true);
       let response;
+      const page = 1; // Always fetch page 1 with high limit
 
       // Priority 1: Check if there's a global search query from header
       if (searchQuery) {
         console.log('🔍 Global search query detected:', searchQuery);
-        response = await globalSearchApi(searchQuery, page, limit);
+        response = await globalSearchApi(searchQuery, page, fetchLimit);
 
         if (response.data.success) {
           // Filter to show only equipment results
@@ -127,9 +154,7 @@ const Equipment = () => {
             })
           );
 
-          setEquipments(equipmentsWithPricing);
-          setTotalPages(response.data.totalPages);
-          setTotal(response.data.total);
+          processUniqueEquipments(equipmentsWithPricing);
         }
       }
       // Priority 2: Check if filters are active
@@ -138,7 +163,7 @@ const Equipment = () => {
         const filterPayload = {
           ...filters,
           page,
-          limit
+          limit: fetchLimit
         };
 
         console.log('🔍 Sending filters to backend:', filterPayload);
@@ -146,26 +171,23 @@ const Equipment = () => {
 
         if (response.data.success) {
           console.log('✅ Filter API Response:', response.data);
-          setEquipments(response.data.data);
-          setTotalPages(response.data.totalPages);
-          setTotal(response.data.total);
+          processUniqueEquipments(response.data.data);
         }
       }
       // Priority 3: Default - fetch all equipment
       else {
         console.log('📋 Fetching all equipment (no search/filters)');
-        response = await getAllEquipmentsApi(page, limit);
+        response = await getAllEquipmentsApi(page, fetchLimit);
 
         if (response.data.success) {
-          setEquipments(response.data.data);
-          setTotalPages(response.data.totalPages);
-          setTotal(response.data.total);
+          processUniqueEquipments(response.data.data);
         }
       }
     } catch (error) {
       console.error('❌ Error fetching equipments:', error);
       console.error('Error details:', error.response?.data || error.message);
       // Show error message to user
+      setAllUniqueEquipments([]);
       setEquipments([]);
       setTotalPages(1);
       setTotal(0);
@@ -196,6 +218,8 @@ const Equipment = () => {
       console.log('🔄 Clearing global search, switching to local filters');
       navigate('/equipments', { replace: true });
     }
+
+    setSearchTrigger(prev => prev + 1);
 
     // Check if there are any filter values
     if (hasActiveFilters()) {
@@ -405,83 +429,87 @@ const Equipment = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              {equipments.map((equipment) => (
-                <div
-                  key={equipment._id}
-                  className="p-4 rounded-[16px]"
-                  style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
-                >
-                  <div className="grid grid-cols-12 md:grid-cols-12 gap-6 ">
-                    <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
-                      <img
-                        src={equipment.profileImage}
-                        alt={equipment.equipmentName}
-                        className="rounded-[12px] w-[200px] h-[200px] object-cover "
-                      />
-                    </div>
-                    <div className="col-span-12 md:col-span-7">
-                      <div className="flex flex-col justify-center h-full gap-[6px]">
-                        <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
-                          {equipment.equipmentName}
-                        </h1>
-                        <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
-                          {equipment.subCategory}
-                        </p>
-                        {/* Status from backend */}
-                        {/* {equipment.status && (
+              {equipments
+                .map((equipment) => (
+                  <div
+                    key={equipment._id}
+                    className="p-4 rounded-[16px]"
+                    style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                  >
+                    <div className="grid grid-cols-12 md:grid-cols-12 gap-6 ">
+                      <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
+                        <img
+                          src={equipment.profileImage}
+                          alt={equipment.equipmentName}
+                          className="rounded-[12px] w-[200px] h-[200px] object-cover "
+                        />
+                      </div>
+                      <div className="col-span-12 md:col-span-7">
+                        <div className="flex flex-col justify-center h-full gap-[6px]">
+                          <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
+                            {equipment.equipmentName}
+                          </h1>
+                          <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
+                            {equipment.subCategory}
+                          </p>
+                          <p className="text-[12px] md:text-[14px] font-semibold text-[#A2CD48]">
+                            Available: {equipment.totalInSubcategory || 0}
+                          </p>
+                          {/* Status from backend */}
+                          {/* {equipment.status && (
                           <p className="text-[12px] md:text-[14px] font-semibold">
                             Status: <span className={`capitalize ${equipment.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
                               {equipment.status}
                             </span>
                           </p>
                         )} */}
-                        <p className="text-[12px] text-gray-600">
-                          {equipment.advantages}
-                        </p>
-                        <div>
-                          <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
-                            Rental Price:{" "}
-                            <span className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
-                              {equipment.pricings?.perDay ? (
-                                <>₹{equipment.pricings.perDay}/day | ₹{equipment.pricings.perWeek}/week</>
-                              ) : (
-                                "Contact for pricing"
-                              )}
-                            </span>
+                          <p className="text-[12px] text-gray-600">
+                            {equipment.advantages}
                           </p>
-                          <div className="flex gap-2 mt-[6px]">
-                            <button
-                              className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
-                              onClick={() => {
-                                // if (!isAuthenticated) {
-                                //   toast.error('Please login to add items to cart');
-                                //   return;
-                                // }
-                                setSelectedEquipment(equipment);
-                                setIsModalOpen(true);
-                              }}
-                            >
-                              Add To Cart
-                            </button>
-                            <button
-                              className="bg-[#A2CD48] text-white  px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
-                              onClick={() => {
-                                // if (!isAuthenticated) {
-                                //   toast.error('Please login to rent equipment');
-                                //   return;
-                                // }
-                                navigate(`/equipment/${equipment._id}`);
-                              }}
-                            >
-                              Rent Now
-                            </button>
+                          <div>
+                            <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
+                              Rental Price:{" "}
+                              <span className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
+                                {equipment.pricings?.perDay ? (
+                                  <>₹{equipment.pricings.perDay}/day | ₹{equipment.pricings.perWeek}/week</>
+                                ) : (
+                                  "Contact for pricing"
+                                )}
+                              </span>
+                            </p>
+                            <div className="flex gap-2 mt-[6px]">
+                              <button
+                                className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                onClick={() => {
+                                  // if (!isAuthenticated) {
+                                  //   toast.error('Please login to add items to cart');
+                                  //   return;
+                                  // }
+                                  setSelectedEquipment(equipment);
+                                  setIsModalOpen(true);
+                                }}
+                              >
+                                Add To Cart
+                              </button>
+                              <button
+                                className="bg-[#A2CD48] text-white  px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                onClick={() => {
+                                  // if (!isAuthenticated) {
+                                  //   toast.error('Please login to rent equipment');
+                                  //   return;
+                                  // }
+                                  navigate(`/equipment/${equipment._id}`);
+                                }}
+                              >
+                                Rent Now
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             {/* Pagination */}

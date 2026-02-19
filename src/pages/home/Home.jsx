@@ -110,7 +110,7 @@ const Home = () => {
       try {
         setLoadingEquipments(true);
         setEquipmentError(null);
-        const response = await getAllEquipmentsApi(1, 5); // Fetch 5 items for home page
+        const response = await getAllEquipmentsApi(1, 20); // Fetch more items to find unique subcategories
 
         if (response.data && response.data.data) {
           setEquipments(response.data.data);
@@ -610,99 +610,110 @@ const Home = () => {
               </SwiperSlide>
             ) : (
               // Data loaded successfully
-              equipments.map((data, index) => {
-                // Extract pricing information
-                const getPriceDisplay = () => {
-                  if (data.pricings) {
-                    const prices = [];
-                    if (data.pricings.perDay)
-                      prices.push(`₹${data.pricings.perDay}/day`);
-                    if (data.pricings.perWeek)
-                      prices.push(`₹${data.pricings.perWeek}/week`);
-                    if (data.pricings.perMonth)
-                      prices.push(`₹${data.pricings.perMonth}/month`);
-                    return prices.join(" | ") || "Price on request";
-                  }
-                  return "Price on request";
-                };
+              equipments
+                .filter((item, index, self) =>
+                  index === self.findIndex((t) => t.subCategory === item.subCategory)
+                )
+                .slice(0, 4)
+                .map((data, index) => {
+                  // Extract pricing information
+                  const getPriceDisplay = () => {
+                    if (data.pricings) {
+                      const prices = [];
+                      if (data.pricings.perDay)
+                        prices.push(`₹${data.pricings.perDay}/day`);
+                      if (data.pricings.perWeek)
+                        prices.push(`₹${data.pricings.perWeek}/week`);
+                      if (data.pricings.perMonth)
+                        prices.push(`₹${data.pricings.perMonth}/month`);
+                      return prices.join(" | ") || "Price on request";
+                    }
+                    return "Price on request";
+                  };
 
-                return (
-                  <SwiperSlide key={data._id || index} className="p-1">
-                    <div
-                      className="p-4 rounded-[16px]"
-                      style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
-                          <img
-                            src={
-                              data.profileImage ||
-                              data.images?.[0] ||
-                              "/assets/EquipmentImages/default-equipment.png"
-                            }
-                            alt={data.equipmentName}
-                            className="rounded-[12px] w-[200px] h-[200px] object-cover"
-                          />
-                        </div>
-                        <div className="col-span-12 md:col-span-7">
-                          <div className="flex flex-col justify-center h-full gap-[6px]">
-                            <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
-                              {data.equipmentName}
-                            </h1>
-                            {/* Status from backend */}
-                            {/* {data.status && (
-                              <p className="text-[12px] md:text-[14px] font-semibold">
-                                Status: <span className={`capitalize ${data.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
-                                  {data.status}
-                                </span>
+                  return (
+                    <SwiperSlide key={data._id || index} className="p-1">
+                      <div
+                        className="p-4 rounded-[16px]"
+                        style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                          <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
+                            <img
+                              src={
+                                data.profileImage ||
+                                data.images?.[0] ||
+                                "/assets/EquipmentImages/default-equipment.png"
+                              }
+                              alt={data.equipmentName}
+                              className="rounded-[12px] w-[200px] h-[200px] object-cover"
+                            />
+                          </div>
+                          <div className="col-span-12 md:col-span-7">
+                            <div className="flex flex-col justify-center h-full gap-[6px]">
+                              <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
+                                {data.equipmentName}
+                              </h1>
+                              <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
+                                {data.subCategory}
                               </p>
-                            )} */}
-                            <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold line-clamp-2">
-                              {data.advantages}
-                            </p>
-                            <div>
-                              <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
-                                Rental Price:{" "}
-                                <span className="text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
-                                  {getPriceDisplay()}
-                                </span>
+                              <p className="text-[12px] md:text-[14px] font-semibold text-[#A2CD48]">
+                                Available: {data.totalInSubcategory || 0}
                               </p>
-                              <div className="flex gap-2 mt-[6px]">
-                                <button
-                                  className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
-                                  onClick={() => {
-                                    // if (!isAuthenticated) {
-                                    //   toast.error('Please login to add items to cart');
-                                    //   return;
-                                    // }
-                                    setSelectedEquipment(data);
-                                    setSelectedItemType("equipment");
-                                    setIsModalOpen(true);
-                                  }}
-                                >
-                                  Add To Cart
-                                </button>
-                                <button
-                                  className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
-                                  onClick={() => {
-                                    // if (!isAuthenticated) {
-                                    //   toast.error('Please login to rent equipment');
-                                    //   return;
-                                    // }
-                                    navigate(`/equipment/${data._id}`);
-                                  }}
-                                >
-                                  Rent Now
-                                </button>
+                              {/* Status from backend */}
+                              {/* {data.status && (
+                               <p className="text-[12px] md:text-[14px] font-semibold">
+                                 Status: <span className={`capitalize ${data.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
+                                   {data.status}
+                                 </span>
+                               </p>
+                             )} */}
+                              <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold line-clamp-2">
+                                {data.advantages}
+                              </p>
+                              <div>
+                                <p className="text-[14px] leading-[22px] tracking-[0.56px] font-semibold">
+                                  Rental Price:{" "}
+                                  <span className="text-[16px] leading-[26px] tracking-[0.64px] font-semibold">
+                                    {getPriceDisplay()}
+                                  </span>
+                                </p>
+                                <div className="flex gap-2 mt-[6px]">
+                                  <button
+                                    className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                    onClick={() => {
+                                      // if (!isAuthenticated) {
+                                      //   toast.error('Please login to add items to cart');
+                                      //   return;
+                                      // }
+                                      setSelectedEquipment(data);
+                                      setSelectedItemType("equipment");
+                                      setIsModalOpen(true);
+                                    }}
+                                  >
+                                    Add To Cart
+                                  </button>
+                                  <button
+                                    className="bg-[#A2CD48] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
+                                    onClick={() => {
+                                      // if (!isAuthenticated) {
+                                      //   toast.error('Please login to rent equipment');
+                                      //   return;
+                                      // }
+                                      navigate(`/equipment/${data._id}`);
+                                    }}
+                                  >
+                                    Rent Now
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </SwiperSlide>
-                );
-              })
+                    </SwiperSlide>
+                  );
+                })
             )}
           </Swiper>
         </div>

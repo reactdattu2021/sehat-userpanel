@@ -11,19 +11,20 @@ const Footer = () => {
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
-        // Fetch top 5 equipments
-        const equipmentResponse = await getAllEquipmentsApi(1, 5);
-        console.log("Equipment API Response:", equipmentResponse);
+        // Fetch more equipments to find unique subcategories
+        const equipmentResponse = await getAllEquipmentsApi(1, 20);
         if (equipmentResponse.data.success) {
-          console.log("Equipment Data:", equipmentResponse.data.data);
-          setEquipments(equipmentResponse.data.data || []);
+          const uniqueEquipments = equipmentResponse.data.data
+            .filter((item, index, self) =>
+              index === self.findIndex((t) => t.subCategory === item.subCategory)
+            )
+            .slice(0, 5);
+          setEquipments(uniqueEquipments);
         }
 
         // Fetch top 5 nurse services
         const nurseResponse = await getAllNursesApi(1, 5);
-        console.log("Nurse API Response:", nurseResponse);
         if (nurseResponse.data.success) {
-          console.log("Nurse Data:", nurseResponse.data.data);
           setNurses(nurseResponse.data.data || []);
         }
       } catch (error) {
@@ -128,7 +129,7 @@ const Footer = () => {
                       onClick={() => handleEquipmentClick(equipment._id)}
                       style={{ cursor: 'pointer' }}
                     >
-                      {equipment.equipmentName}
+                      {equipment.subCategory}
                     </p>
                   ))}
                   <p

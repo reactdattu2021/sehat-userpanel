@@ -247,7 +247,18 @@ const CheckOut = () => {
         }
 
         // Calculate discount
-        let discount = couponDetails.discountamount;
+        let discount = 0;
+
+        const qty = bookingData.quantity || 1;
+
+        if (couponDetails.discountType === "percentage") {
+          discount = (orderSummary.totalAmount * couponDetails.discountamount) / 100;
+        } else {
+          //  Multiply fixed discount with quantity
+          discount = (couponDetails.discountamount || 0) * qty;
+        }
+
+        // Prevent over-discount
         discount = Math.min(discount, orderSummary.totalAmount);
 
         setAppliedCoupon({
