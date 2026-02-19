@@ -117,7 +117,6 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
 
   const calculateTotalAmount = () => {
     if (!displayData || !displayData.pricings) return 0;
-
     const rentalValue = calculateRentalValue();
 
     const baseAmount = (displayData.pricings[rentalType] || 0) * quantity * rentalValue;
@@ -187,44 +186,42 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
       return;
     }
 
-    // Prepare start date
-    let startDateTime;
-    if (itemType === "service") {
-      // For services, combine date and time
-      const [hours, minutes] = selectedTime.split(":");
-      console.log("Hours:", hours, "Minutes:", minutes);
-      startDateTime = new Date(selectedDate);
-      startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-
-      // Validate that the selected datetime is not in the past
-      const now = new Date();
-      if (startDateTime < now) {
-        toast.error("Please select a future date and time");
-        return;
-      }
-    } else {
-      const [hours, minutes] = selectedTime.split(":");
-      console.log("Hours:", hours, "Minutes:", minutes);
-      startDateTime = new Date(selectedDate);
-      startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      console.log("Start DateTime:", startDateTime);
-
-      // Prevent past time booking
-      const now = new Date();
-      if (startDateTime < now) {
-        toast.error("Please select a future date and time");
-        return;
-      }
-    }
-
+    // Prepare start and end dates
+    const startDateTime = new Date(`${selectedDate}T${selectedTime}`);
     const endDateTime = new Date(`${endDate}T${endTime}`);
+
     if (endDateTime <= startDateTime) {
       toast.error("End date/time must be after start date/time");
       return;
     }
 
+    const now = new Date();
+    if (startDateTime < now) {
+      toast.error("Please select a future date and time");
+      return;
+    }
+
+    const diffMs = endDateTime - startDateTime;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (rentalType === "perWeek") {
+      if (diffDays % 7 !== 0 || diffDays > 28) {
+        toast.error("This is not valid dates you choosed for week");
+        return;
+      }
+    } else if (rentalType === "perMonth") {
+      if (diffDays % 30 !== 0) {
+        toast.error("This is not valid dates you choosed for month");
+        return;
+      }
+    }
+
     const rentalValue = calculateRentalValue();
+
+    if (!displayData.pricings[rentalType]) {
+      toast.error(`${rentalType === 'perDay' ? 'Daily' : rentalType === 'perWeek' ? 'Weekly' : 'Monthly'} pricing not available for this ${itemType}`);
+      return;
+    }
 
     const cartPayload = {
       rentalDuration: rentalType,

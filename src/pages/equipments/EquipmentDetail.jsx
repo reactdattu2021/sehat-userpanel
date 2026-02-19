@@ -157,7 +157,27 @@ const EquipmentDetail = () => {
       return;
     }
 
+    const diffMs = toDateTime - fromDateTime;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (rentalType === "perWeek") {
+      if (diffDays % 7 !== 0 || diffDays > 28) {
+        toast.error("This is not valid dates you choosed for week");
+        return;
+      }
+    } else if (rentalType === "perMonth") {
+      if (diffDays % 30 !== 0) {
+        toast.error("This is not valid dates you choosed for month");
+        return;
+      }
+    }
+
     const rentalValue = calculateRentalValue();
+
+    if (!equipment.pricings[rentalType]) {
+      toast.error(`${rentalType === 'perDay' ? 'Daily' : rentalType === 'perWeek' ? 'Weekly' : 'Monthly'} pricing not available for this equipment`);
+      return;
+    }
 
     // Check authentication before proceeding to checkout
     if (!isAuthenticated) {

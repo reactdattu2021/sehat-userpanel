@@ -149,14 +149,29 @@ const NurseDetail = () => {
     const toDateTime = new Date(`${toDate}T${toTime}`);
 
     if (toDateTime <= fromDateTime) {
-      toast.error('To date/time must be after from date/time');
+      toast.error("To date/time must be after from date/time");
       return;
     }
 
     const now = new Date();
     if (fromDateTime < now) {
-      toast.error('Please select a future date and time');
+      toast.error("Please select a future date and time");
       return;
+    }
+
+    const diffMs = toDateTime - fromDateTime;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (rentalType === "perWeek") {
+      if (diffDays % 7 !== 0 || diffDays > 28) {
+        toast.error("This is not valid dates you choosed for week");
+        return;
+      }
+    } else if (rentalType === "perMonth") {
+      if (diffDays % 30 !== 0) {
+        toast.error("This is not valid dates you choosed for month");
+        return;
+      }
     }
 
     const rentalValue = calculateRentalValue();
