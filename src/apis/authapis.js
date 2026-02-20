@@ -398,3 +398,11 @@ export const getBlogByIdApi = (blogId) => {
 export const contactUsApi = (contactData) => {
   return axiosInstance.post("/userAddress/contactus", contactData);
 };
+
+export const getAllNotificationsApi = (page = 1, limit = 10) => {
+  return axiosInstance.get("/user/notifications/all", { params: { page, limit } });
+};
+
+export const getNotificationByIdApi = (id) => {
+  return axiosInstance.get(`/user/notifications/${id}`);
+};

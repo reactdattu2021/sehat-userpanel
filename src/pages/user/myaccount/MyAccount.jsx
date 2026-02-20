@@ -4,6 +4,7 @@ import Profile from "./Profile";
 import MyAddress from "./MyAddress";
 import MyOrders from "./MyOrders";
 import ChangePassword from "./ChangePassword";
+import Notifications from "./Notifications";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
 import { useAuth } from "../../../context/AuthContext";
@@ -28,6 +29,8 @@ const MyAccount = () => {
         return <MyOrders />;
       case "password":
         return <ChangePassword />;
+      case "notifications":
+        return <Notifications />;
       default:
         return <Profile />;
     }
@@ -102,6 +105,7 @@ const MyAccount = () => {
                   { id: "profile", label: "My Profile" },
                   { id: "address", label: "Address" },
                   { id: "orders", label: "My Orders" },
+                  { id: "notifications", label: "Notifications" },
                   { id: "password", label: "Password Manager" },
                 ].map((item, i) => (
                   <li
