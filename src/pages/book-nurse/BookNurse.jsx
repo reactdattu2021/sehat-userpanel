@@ -1,12 +1,22 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { MdKeyboardArrowDown, MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
+import React, { useRef, useState, useEffect } from "react";
+import {
+  MdKeyboardArrowDown,
+  MdKeyboardArrowLeft,
+  MdKeyboardArrowRight,
+} from "react-icons/md";
 import { MdOutlineMyLocation } from "react-icons/md";
-import { faqData } from '../../utils/Data';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { getAllNursesApi, getNurseFiltersApi, getFilterDropdownDataApi, globalSearchApi, getNurseByIdApi } from '../../apis/authapis';
-import AddToCartModal from '../../components/AddToCartModal';
-import { useAuth } from '../../context/AuthContext';
-import { toast } from 'react-toastify';
+import { faqData } from "../../utils/Data";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import {
+  getAllNursesApi,
+  getNurseFiltersApi,
+  getFilterDropdownDataApi,
+  globalSearchApi,
+  getNurseByIdApi,
+} from "../../apis/authapis";
+import AddToCartModal from "../../components/AddToCartModal";
+import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-toastify";
 
 const BookNurse = () => {
   const selectRef = useRef(null);
@@ -29,9 +39,9 @@ const BookNurse = () => {
   const limit = 10;
 
   // Get search parameters from URL
-  const urlSubCategory = searchParams.get('subCategory');
-  const urlLocation = searchParams.get('location');
-  const searchQuery = searchParams.get('search'); // Keep for backward compatibility
+  const urlSubCategory = searchParams.get("subCategory");
+  const urlLocation = searchParams.get("location");
+  const searchQuery = searchParams.get("search"); // Keep for backward compatibility
 
   // State for dropdown data
   const [dropdownData, setDropdownData] = useState({
@@ -39,28 +49,32 @@ const BookNurse = () => {
     serviceSubCategories: [],
     experiences: [],
     minPrice: 0,
-    maxPrice: 0
+    maxPrice: 0,
   });
 
   // State for filters
   const [filters, setFilters] = useState({
     subCategory: "",
     location: "",
+    date: "",
     experience: "",
-    gender: ""
+    gender: "",
   });
   const [isFilterActive, setIsFilterActive] = useState(false);
-  const [selectedValue, setSelectedValue] = useState("Nearest");
+  // const [selectedValue, setSelectedValue] = useState("Nearest");
 
   // Initialize filters from URL parameters on mount
   useEffect(() => {
     if (urlSubCategory || urlLocation) {
-      console.log('🏠 Home page search detected:', { urlSubCategory, urlLocation });
-      console.log('📌 Setting isFilterActive to TRUE');
-      setFilters(prev => ({
+      console.log("🏠 Home page search detected:", {
+        urlSubCategory,
+        urlLocation,
+      });
+      console.log("📌 Setting isFilterActive to TRUE");
+      setFilters((prev) => ({
         ...prev,
         subCategory: urlSubCategory || "",
-        location: urlLocation || ""
+        location: urlLocation || "",
       }));
       setIsFilterActive(true);
     }
@@ -69,7 +83,7 @@ const BookNurse = () => {
   // Fetch dropdown data on mount (only once)
   useEffect(() => {
     if (!hasFetchedDropdownData.current) {
-      console.log('📥 Fetching dropdown data...');
+      console.log("📥 Fetching dropdown data...");
       hasFetchedDropdownData.current = true;
       fetchDropdownData();
     }
@@ -80,7 +94,9 @@ const BookNurse = () => {
     // Skip initial fetch if URL params exist but isFilterActive hasn't been set yet
     // This prevents duplicate calls: one without filters, then one with filters
     if ((urlSubCategory || urlLocation) && !isFilterActive) {
-      console.log('⏭️ Skipping initial fetch - waiting for filter activation from URL params');
+      console.log(
+        "⏭️ Skipping initial fetch - waiting for filter activation from URL params",
+      );
       return;
     }
 
@@ -90,21 +106,21 @@ const BookNurse = () => {
   // Fetch dropdown data from API
   const fetchDropdownData = async () => {
     try {
-      console.log('🌐 Calling getFilterDropdownDataApi...');
+      console.log("🌐 Calling getFilterDropdownDataApi...");
       const response = await getFilterDropdownDataApi();
       if (response.data.success) {
         const data = response.data.data;
-        console.log('✅ Dropdown data fetched successfully');
+        console.log("✅ Dropdown data fetched successfully");
         setDropdownData({
           equipmentSubCategories: data.subCategories.equipment || [],
           serviceSubCategories: data.subCategories.service || [],
           experiences: data.experiences || [],
           minPrice: data.pricing.min || 0,
-          maxPrice: data.pricing.max || 0
+          maxPrice: data.pricing.max || 0,
         });
       }
     } catch (error) {
-      console.error('❌ Error fetching dropdown data:', error);
+      console.error("❌ Error fetching dropdown data:", error);
     }
   };
 
@@ -113,7 +129,7 @@ const BookNurse = () => {
     return (
       urlSubCategory ||
       urlLocation ||
-      Object.values(filters).some(value => value !== "")
+      Object.values(filters).some((value) => value !== "")
     );
   };
 
@@ -122,25 +138,30 @@ const BookNurse = () => {
       setLoading(true);
       let response;
 
-      console.log('🔄 fetchNurses called with:', {
+      console.log("🔄 fetchNurses called with:", {
         page,
         searchQuery,
         urlSubCategory,
         urlLocation,
         isFilterActive,
-        hasActiveFilters: hasActiveFilters()
+        hasActiveFilters: hasActiveFilters(),
       });
 
       // Priority 1: Check if there's a global search query from header
       if (searchQuery) {
-        console.log('🔍 Global search query detected:', searchQuery);
+        console.log("🔍 Global search query detected:", searchQuery);
 
         // Build a unique key for this search
         const searchKey = `${searchQuery}-${page}`;
 
         // Check if we've already searched for this exact query + page combo
         if (lastSearchQuery.current === searchKey) {
-          console.log('⏭️ Skipping duplicate global search for:', searchQuery, 'page:', page);
+          console.log(
+            "⏭️ Skipping duplicate global search for:",
+            searchQuery,
+            "page:",
+            page,
+          );
           setLoading(false);
           return;
         }
@@ -151,9 +172,11 @@ const BookNurse = () => {
         if (response.data.success) {
           // Filter to show only service results
           const serviceResults = response.data.data.filter(
-            item => item.resultType === 'service'
+            (item) => item.resultType === "service",
           );
-          console.log(`✅ Global search found ${serviceResults.length} service results`);
+          console.log(
+            `✅ Global search found ${serviceResults.length} service results`,
+          );
 
           // Fetch full details with pricing for each service
           const servicesWithPricing = await Promise.all(
@@ -164,15 +187,18 @@ const BookNurse = () => {
                   // Combine service data with pricing
                   return {
                     ...detailResponse.data.data.service,
-                    pricings: detailResponse.data.data.pricings
+                    pricings: detailResponse.data.data.pricings,
                   };
                 }
                 return service; // Fallback to original if fetch fails
               } catch (error) {
-                console.error(`Failed to fetch pricing for service ${service._id}:`, error);
+                console.error(
+                  `Failed to fetch pricing for service ${service._id}:`,
+                  error,
+                );
                 return service; // Fallback to original if fetch fails
               }
-            })
+            }),
           );
 
           setNurses(servicesWithPricing);
@@ -182,25 +208,28 @@ const BookNurse = () => {
       }
       // Priority 2: Check if filters are active (from URL params or local filters)
       else if (isFilterActive && hasActiveFilters()) {
-        console.log('✅ Filter conditions met - using filter API');
+        console.log("✅ Filter conditions met - using filter API");
 
         // Build filter object - prioritize URL params if they exist
         const filterParams = {
           subCategory: urlSubCategory || filters.subCategory,
           location: urlLocation || filters.location,
+          date: filters.date, 
           experience: filters.experience,
           gender: filters.gender,
           page,
-          limit
+          limit,
         };
 
-        console.log('🔍 Applying filters:', filterParams);
+        console.log("🔍 Applying filters:", filterParams);
 
         // Use filter API when filters are active and have values
         response = await getNurseFiltersApi(filterParams);
 
         if (response.data.success) {
-          console.log(`✅ Filter API found ${response.data.data.length} results`);
+          console.log(
+            `✅ Filter API found ${response.data.data.length} results`,
+          );
 
           // Fetch full details with pricing for each nurse
           const nursesWithPricing = await Promise.all(
@@ -210,15 +239,18 @@ const BookNurse = () => {
                 if (detailResponse.data.success) {
                   return {
                     ...detailResponse.data.data.service,
-                    pricings: detailResponse.data.data.pricings
+                    pricings: detailResponse.data.data.pricings,
                   };
                 }
                 return nurse;
               } catch (error) {
-                console.error(`Failed to fetch pricing for nurse ${nurse._id}:`, error);
+                console.error(
+                  `Failed to fetch pricing for nurse ${nurse._id}:`,
+                  error,
+                );
                 return nurse;
               }
-            })
+            }),
           );
 
           setNurses(nursesWithPricing);
@@ -228,8 +260,13 @@ const BookNurse = () => {
       }
       // Priority 3: Default - fetch all nurses
       else {
-        console.log('📋 Fetching all nurses (no search/filters)');
-        console.log('   Reason: isFilterActive =', isFilterActive, ', hasActiveFilters =', hasActiveFilters());
+        console.log("📋 Fetching all nurses (no search/filters)");
+        console.log(
+          "   Reason: isFilterActive =",
+          isFilterActive,
+          ", hasActiveFilters =",
+          hasActiveFilters(),
+        );
         response = await getAllNursesApi(page, limit);
 
         if (response.data.success) {
@@ -239,7 +276,7 @@ const BookNurse = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching nurses:', error);
+      console.error("Error fetching nurses:", error);
       // Show error message to user
       setNurses([]);
       setTotalPages(1);
@@ -252,15 +289,15 @@ const BookNurse = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   // Handle filter input changes
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -268,8 +305,10 @@ const BookNurse = () => {
   const handleSearch = () => {
     // Clear global search and home page search params from URL when using local filters
     if (searchQuery || urlSubCategory || urlLocation) {
-      console.log('🔄 Clearing URL search parameters, switching to local filters');
-      navigate('/book-nurse', { replace: true });
+      console.log(
+        "🔄 Clearing URL search parameters, switching to local filters",
+      );
+      navigate("/book-nurse", { replace: true });
     }
 
     // Check if there are any filter values
@@ -288,15 +327,16 @@ const BookNurse = () => {
     setFilters({
       subCategory: "",
       location: "",
+      date: "",
       experience: "",
-      gender: ""
+      gender: "",
     });
     setIsFilterActive(false);
     setCurrentPage(1);
   };
 
   return (
-    <div className='space-y-[60px] md:space-y-[80px] xl:space-y-[120px]'>
+    <div className="space-y-[60px] md:space-y-[80px] xl:space-y-[120px]">
       {/* hero section  */}
       <div className="h-[240px] md:h-[320px] xl:h-[502px] bg-[url('/assets/BookANurseImages/banner.png')] bg-center bg-cover bg-no-repeat">
         <div className="max-w-[1440px] mx-auto px-5 md:px-[32px]  xl:px-[120px] flex flex-col justify-center h-full">
@@ -317,7 +357,9 @@ const BookNurse = () => {
               </h1>
 
               <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center  mb-[44px]">
-                Choose a home care category and instantly view verified nurses available in your area — book hourly, daily, or full-time nursing care right at your doorstep.
+                Choose a home care category and instantly view verified nurses
+                available in your area — book hourly, daily, or full-time
+                nursing care right at your doorstep.
               </p>
             </div>
           </div>
@@ -331,21 +373,29 @@ const BookNurse = () => {
                     <select
                       ref={selectRef}
                       value={filters.subCategory}
-                      onChange={(e) => handleFilterChange('subCategory', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange("subCategory", e.target.value)
+                      }
                       className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
                     >
                       <option value="">Select Nurse Category</option>
                       {dropdownData.serviceSubCategories.length > 0 ? (
-                        dropdownData.serviceSubCategories.map((service, index) => (
-                          <option key={index} value={service}>
-                            {service}
-                          </option>
-                        ))
+                        dropdownData.serviceSubCategories.map(
+                          (service, index) => (
+                            <option key={index} value={service}>
+                              {service}
+                            </option>
+                          ),
+                        )
                       ) : (
                         // Fallback static options if API data is not available
                         <>
-                          <option value="elderlycarenurse">Elderly Care Nurse</option>
-                          <option value="postsurgerycare">Post-Surgery Care</option>
+                          <option value="elderlycarenurse">
+                            Elderly Care Nurse
+                          </option>
+                          <option value="postsurgerycare">
+                            Post-Surgery Care
+                          </option>
                           <option value="bedriddencare">Bedridden Care</option>
                           <option value="cardiologist">Cardiologist</option>
                           <option value="cardiacnurse">Cardiac Nurse</option>
@@ -363,7 +413,9 @@ const BookNurse = () => {
                 <div className="col-span-12 md:col-span-4 xl:col-span-5">
                   <input
                     value={filters.location}
-                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("location", e.target.value)
+                    }
                     className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] border-[#3D3D3D] rounded-[8px] w-full p-3 placeholder:text-[#3D3D3D] "
                     placeholder="Enter Your Location"
                   />
@@ -381,51 +433,35 @@ const BookNurse = () => {
               </div>
               <div className="grid grid-cols-12 md:grid-cols-12 gap-3">
                 <div className="col-span-12 md:col-span-4">
-                  <div className="relative">
-                    {/* Custom Styled UI */}
-                    <div
-                      className="flex items-center justify-between border border-[#3D3D3D] rounded-[8px] 
-                   w-full p-3 cursor-pointer"
-                      onClick={() => selectRef.current?.click()}
-                    >
-                      {/* Left: Show selected option dynamically */}
-                      <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold text-[#3D3D3D]">
-                        {selectedValue}
-                      </span>
-
-                      {/* Right: SortBy + Arrow */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold text-[#3D3D3D]">
-                          Sort By
-                        </span>
-                        <MdKeyboardArrowDown className="w-[20px] h-[20px]" />
-                      </div>
-                    </div>
-
-                    {/* Actual select (invisible) */}
-                    <select
-                      ref={selectRef}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      onChange={(e) => setSelectedValue(e.target.value)}
-                    >
-                      <option>Nearest</option>
-                      <option>2km</option>
-                      <option>3km</option>
-                    </select>
+                  <div>
+                    <input
+                      type="date"
+                      value={filters.date}
+                      onChange={(e) =>
+                        handleFilterChange("date", e.target.value)
+                      }
+                      className="text-[14px] leading-[22px] tracking-[0.56px] 
+      md:text-[16px] md:leading-[26px] md:tracking-[0.64px] 
+      font-semibold border-[1px] text-[#3D3D3D] 
+      border-[#3D3D3D] rounded-[8px] w-full p-3"
+                    />
                   </div>
                 </div>
+
                 <div className="col-span-12 md:col-span-4">
                   <div className="relative">
                     <select
                       value={filters.experience}
-                      onChange={(e) => handleFilterChange('experience', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange("experience", e.target.value)
+                      }
                       className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px]  font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
                     >
                       <option value="">Experience</option>
                       {dropdownData.experiences.length > 0 ? (
                         dropdownData.experiences.map((exp, index) => (
                           <option key={index} value={exp}>
-                            {exp} {exp === 1 ? 'year' : 'years'}
+                            {exp} {exp === 1 ? "year" : "years"}
                           </option>
                         ))
                       ) : (
@@ -450,7 +486,9 @@ const BookNurse = () => {
                   <div className="relative">
                     <select
                       value={filters.gender}
-                      onChange={(e) => handleFilterChange('gender', e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange("gender", e.target.value)
+                      }
                       className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold border-[1px] text-[#3D3D3D] border-[#3D3D3D] rounded-[8px] w-full p-3 appearance-none"
                     >
                       <option value="">Gender</option>
@@ -491,11 +529,15 @@ const BookNurse = () => {
       <div className="max-w-[1440px] mx-auto px-5 md:px-[32px]  xl:px-[120px]">
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="text-xl font-semibold text-[#34658C]">Loading nurses...</div>
+            <div className="text-xl font-semibold text-[#34658C]">
+              Loading nurses...
+            </div>
           </div>
         ) : nurses.length === 0 ? (
           <div className="flex justify-center items-center py-20">
-            <div className="text-xl font-semibold text-gray-500">No nurses found</div>
+            <div className="text-xl font-semibold text-gray-500">
+              No nurses found
+            </div>
           </div>
         ) : (
           <>
@@ -509,7 +551,10 @@ const BookNurse = () => {
                   <div className="grid grid-cols-12 md:grid-cols-12 gap-6">
                     <div className="col-span-12 md:col-span-5 rounded-[12px] flex justify-center md:block">
                       <img
-                        src={nurse.profileImage || "/assets/BookANurseImages/doctor img (10).png"}
+                        src={
+                          nurse.profileImage ||
+                          "/assets/BookANurseImages/doctor img (10).png"
+                        }
                         alt={nurse.fullName}
                         className="rounded-[12px] w-[200px] h-[200px] object-cover"
                       />
@@ -523,13 +568,13 @@ const BookNurse = () => {
                           {nurse.subCategory}
                         </p>
                         {/* Status from backend */}
-                        {/* {nurse.status && (
+                        {nurse.status && (
                           <p className="text-[12px] md:text-[14px] font-semibold">
                             Status: <span className={`capitalize ${nurse.status.toLowerCase() === 'available' ? 'text-green-600' : 'text-red-600'}`}>
                               {nurse.status}
                             </span>
                           </p>
-                        )} */}
+                        )}
                         <p className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
                           {nurse.experience} years experience
                         </p>
@@ -541,7 +586,10 @@ const BookNurse = () => {
                             Rental Price:{" "}
                             <span className="text-[14px] leading-[22px] tracking-[0.56px]  md:text-[16px] md:leading-[26px] md:tracking-[0.64px] font-semibold ">
                               {nurse.pricings?.perHour ? (
-                                <>₹{nurse.pricings.perHour}/hour | ₹{nurse.pricings.perDay}/day</>
+                                <>
+                                  ₹{nurse.pricings.perHour}/hour | ₹
+                                  {nurse.pricings.perDay}/day
+                                </>
                               ) : (
                                 "Contact for pricing"
                               )}
@@ -588,10 +636,11 @@ const BookNurse = () => {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`p-3 rounded-lg font-semibold flex items-center justify-center ${currentPage === 1
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#34658C] text-white hover:bg-[#2a5270]'
-                    }`}
+                  className={`p-3 rounded-lg font-semibold flex items-center justify-center ${
+                    currentPage === 1
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-[#34658C] text-white hover:bg-[#2a5270]"
+                  }`}
                 >
                   <MdKeyboardArrowLeft className="w-6 h-6" />
                 </button>
@@ -601,10 +650,11 @@ const BookNurse = () => {
                     <button
                       key={index + 1}
                       onClick={() => handlePageChange(index + 1)}
-                      className={`px-4 py-2 rounded-lg font-semibold ${currentPage === index + 1
-                        ? 'bg-[#A2CD48] text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
+                      className={`px-4 py-2 rounded-lg font-semibold ${
+                        currentPage === index + 1
+                          ? "bg-[#A2CD48] text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
                     >
                       {index + 1}
                     </button>
@@ -614,10 +664,11 @@ const BookNurse = () => {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`p-3 rounded-lg font-semibold flex items-center justify-center ${currentPage === totalPages
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#34658C] text-white hover:bg-[#2a5270]'
-                    }`}
+                  className={`p-3 rounded-lg font-semibold flex items-center justify-center ${
+                    currentPage === totalPages
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-[#34658C] text-white hover:bg-[#2a5270]"
+                  }`}
                 >
                   <MdKeyboardArrowRight className="w-6 h-6" />
                 </button>

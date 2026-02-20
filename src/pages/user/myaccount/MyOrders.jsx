@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
-import { myorderApi, cancelOrderApi, extendBookingApi, verifyPaymentApi } from "../../../apis/authapis";
+import {
+  myorderApi,
+  cancelOrderApi,
+  extendBookingApi,
+  verifyPaymentApi,
+} from "../../../apis/authapis";
 import { toast } from "react-toastify";
 import { IoMdClose } from "react-icons/io";
-
 
 const formatIST = (date) =>
   new Date(date).toLocaleString("en-IN", {
@@ -20,10 +24,16 @@ const MyOrders = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [openEditIndex, setOpenEditIndex] = useState(null);
   const [cancelLoadingId, setCancelLoadingId] = useState(null);
-  const [extensionModal, setExtensionModal] = useState({ isOpen: false, order: null, product: null });
+  const [extensionModal, setExtensionModal] = useState({
+    isOpen: false,
+    order: null,
+    product: null,
+  });
   const [extending, setExtending] = useState(false);
-  const [extensionData, setExtensionData] = useState({ additionalDays: 1, paymentMode: "COD" });
-
+  const [extensionData, setExtensionData] = useState({
+    additionalDays: 1,
+    paymentMode: "COD",
+  });
 
   const limit = 5;
 
@@ -54,7 +64,7 @@ const MyOrders = () => {
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleCancelOrder = async (orderId) => {
     try {
@@ -99,7 +109,7 @@ const MyOrders = () => {
       const payload = {
         additionalDays: extensionData.additionalDays,
         paymentMode: extensionData.paymentMode,
-        selectedItemIds: [extensionModal.product._id]
+        selectedItemIds: [extensionModal.product._id],
       };
 
       const res = await extendBookingApi(extensionModal.order._id, payload);
@@ -112,7 +122,8 @@ const MyOrders = () => {
             return;
           }
 
-          const { razorpay_order_id, razorpay_key_id, amount, extension_data } = res.data;
+          const { razorpay_order_id, razorpay_key_id, amount, extension_data } =
+            res.data;
           const options = {
             key: razorpay_key_id,
             amount: amount * 100,
@@ -129,7 +140,7 @@ const MyOrders = () => {
                   razorpay_signature: response.razorpay_signature,
                   isExtension: true,
                   bookingId: extensionModal.order._id,
-                  extension_data // Pass original extension data for processing
+                  extension_data, // Pass original extension data for processing
                 };
 
                 const verifyRes = await verifyPaymentApi(verifyPayload);
@@ -139,7 +150,9 @@ const MyOrders = () => {
                 }
               } catch (err) {
                 console.error("Verification failed:", err);
-                toast.error("Payment verification failed. Please contact support.");
+                toast.error(
+                  "Payment verification failed. Please contact support.",
+                );
               }
             },
             prefill: {
@@ -152,8 +165,8 @@ const MyOrders = () => {
               ondismiss: () => {
                 toast.info("Payment cancelled");
                 setExtending(false);
-              }
-            }
+              },
+            },
           };
           const rzp = new window.Razorpay(options);
           rzp.open();
@@ -172,7 +185,6 @@ const MyOrders = () => {
       }
     }
   };
-
 
   if (loading) return <p className="text-center mt-10">Loading orders...</p>;
   if (!orders.length)
@@ -219,12 +231,27 @@ const MyOrders = () => {
                     }}
                     disabled={
                       cancelLoadingId === order._id ||
-                      order.status === "cancelled"
+                      [
+                        "cancelled",
+                        "delivered",
+                        "returned",
+                        "completed",
+                      ].includes(order.status) ||
+                      order.payment?.refundStatus === "processed" ||
+                      order.payment?.depositRefundStatus === "processed"
                     }
-                    className={`text-[14px] font-semibold ${order.status === "cancelled"
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-red-600"
-                      }`}
+                    className={`text-[14px] font-semibold ${
+                      [
+                        "cancelled",
+                        "delivered",
+                        "returned",
+                        "completed",
+                      ].includes(order.status) ||
+                      order.payment?.refundStatus === "processed" ||
+                      order.payment?.depositRefundStatus === "processed"
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-red-600"
+                    }`}
                   >
                     {cancelLoadingId === order._id
                       ? "Cancelling..."
@@ -239,7 +266,8 @@ const MyOrders = () => {
             <p className="text-sm mb-3">
               Payment Status:
               <span className="ml-1 font-semibold capitalize">
-                {order.status === "cancelled" && order.payment?.refundStatus !== "none"
+                {order.status === "cancelled" &&
+                order.payment?.refundStatus !== "none"
                   ? order.payment?.refundStatus === "processed"
                     ? "Refunded"
                     : "Refund Pending"
@@ -252,8 +280,9 @@ const MyOrders = () => {
               <p className="text-sm mb-3">
                 Order Status:
                 <span
-                  className={`ml-1 font-semibold capitalize ${order.status === "cancelled" ? "text-red-600" : ""
-                    }`}
+                  className={`ml-1 font-semibold capitalize ${
+                    order.status === "cancelled" ? "text-red-600" : ""
+                  }`}
                 >
                   {order.status}
                 </span>
@@ -266,7 +295,10 @@ const MyOrders = () => {
               const endDate = product.endDate || order.endDate;
 
               return (
-                <div key={product._id || index} className={`grid grid-cols-12 gap-5 ${index > 0 ? 'mt-4 pt-4 border-t border-gray-300' : ''}`}>
+                <div
+                  key={product._id || index}
+                  className={`grid grid-cols-12 gap-5 ${index > 0 ? "mt-4 pt-4 border-t border-gray-300" : ""}`}
+                >
                   <div className="col-span-4">
                     <img
                       src={product.productimages}
@@ -323,9 +355,13 @@ const MyOrders = () => {
                       </>
                     )}
 
-                    {!["cancelled", "completed", "returned"].includes(order.status) && (
+                    {!["cancelled", "completed", "returned"].includes(
+                      order.status,
+                    ) && (
                       <button
-                        onClick={() => setExtensionModal({ isOpen: true, order, product })}
+                        onClick={() =>
+                          setExtensionModal({ isOpen: true, order, product })
+                        }
                         className="mt-2 bg-[#34658C] text-white px-4 py-1.5 rounded-md text-xs font-semibold hover:bg-[#2a5270] transition-colors w-fit"
                       >
                         Extend Rental
@@ -333,8 +369,6 @@ const MyOrders = () => {
                     )}
                   </div>
                 </div>
-
-
               );
             })}
           </div>
@@ -345,10 +379,11 @@ const MyOrders = () => {
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`p-3 rounded-lg font-semibold flex items-center justify-center ${currentPage === 1
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-[#34658C] text-white hover:bg-[#2a5270]"
-              }`}
+            className={`p-3 rounded-lg font-semibold flex items-center justify-center ${
+              currentPage === 1
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#34658C] text-white hover:bg-[#2a5270]"
+            }`}
           >
             <MdKeyboardArrowLeft className="w-6 h-6" />
           </button>
@@ -358,10 +393,11 @@ const MyOrders = () => {
               <button
                 key={index + 1}
                 onClick={() => handlePageChange(index + 1)}
-                className={`px-4 py-2 rounded-lg font-semibold ${currentPage === index + 1
-                  ? "bg-[#A2CD48] text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
+                className={`px-4 py-2 rounded-lg font-semibold ${
+                  currentPage === index + 1
+                    ? "bg-[#A2CD48] text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
               >
                 {index + 1}
               </button>
@@ -371,10 +407,11 @@ const MyOrders = () => {
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`p-3 rounded-lg font-semibold flex items-center justify-center ${currentPage === totalPages
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-[#34658C] text-white hover:bg-[#2a5270]"
-              }`}
+            className={`p-3 rounded-lg font-semibold flex items-center justify-center ${
+              currentPage === totalPages
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#34658C] text-white hover:bg-[#2a5270]"
+            }`}
           >
             <MdKeyboardArrowRight className="w-6 h-6" />
           </button>
@@ -392,31 +429,46 @@ const MyOrders = () => {
               <IoMdClose size={24} />
             </button>
 
-            <h2 className="text-2xl font-bold text-[#34658C] mb-4">Extend Rental</h2>
+            <h2 className="text-2xl font-bold text-[#34658C] mb-4">
+              Extend Rental
+            </h2>
             <p className="text-sm text-gray-600 mb-6">
-              Extend your booking duration. Additional charges will be calculated based on product rates.
+              Extend your booking duration. Additional charges will be
+              calculated based on product rates.
             </p>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  How many {(() => {
-                    const unit = extensionModal.product?.rentalDuration || 'perDay';
+                  How many{" "}
+                  {(() => {
+                    const unit =
+                      extensionModal.product?.rentalDuration || "perDay";
                     const mapping = {
-                      'perHour': 'Hours', 'perhour': 'Hours',
-                      'perDay': 'Days', 'perday': 'Days',
-                      'perWeek': 'Weeks', 'perweek': 'Weeks',
-                      'perMonth': 'Months', 'permonth': 'Months'
+                      perHour: "Hours",
+                      perhour: "Hours",
+                      perDay: "Days",
+                      perday: "Days",
+                      perWeek: "Weeks",
+                      perweek: "Weeks",
+                      perMonth: "Months",
+                      permonth: "Months",
                     };
-                    return mapping[unit] || 'Units';
-                  })()} to extend "{extensionModal.product?.productname}"?
+                    return mapping[unit] || "Units";
+                  })()}{" "}
+                  to extend "{extensionModal.product?.productname}"?
                 </label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     min="1"
                     value={extensionData.additionalDays}
-                    onChange={(e) => setExtensionData({ ...extensionData, additionalDays: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setExtensionData({
+                        ...extensionData,
+                        additionalDays: parseInt(e.target.value) || 0,
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#34658C]"
                     placeholder="Enter extension value..."
                   />
@@ -425,21 +477,37 @@ const MyOrders = () => {
 
               {extensionData.additionalDays > 0 && (
                 <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <p className="text-xs text-blue-800 font-semibold mb-1 uppercase tracking-wider">New End Date Preview</p>
+                  <p className="text-xs text-blue-800 font-semibold mb-1 uppercase tracking-wider">
+                    New End Date Preview
+                  </p>
                   <div className="flex justify-between text-[13px] text-blue-900 font-bold">
                     <span>{extensionModal.product?.productname}:</span>
                     <span>
                       {(() => {
-                        const currentEnd = new Date(extensionModal.product?.endDate);
-                        const unit = extensionModal.product?.rentalDuration || '';
-                        if (unit.toLowerCase().includes('hour')) {
-                          currentEnd.setHours(currentEnd.getHours() + extensionData.additionalDays);
-                        } else if (unit.toLowerCase().includes('week')) {
-                          currentEnd.setDate(currentEnd.getDate() + (extensionData.additionalDays * 7));
-                        } else if (unit.toLowerCase().includes('month')) {
-                          currentEnd.setMonth(currentEnd.getMonth() + extensionData.additionalDays);
+                        const currentEnd = new Date(
+                          extensionModal.product?.endDate,
+                        );
+                        const unit =
+                          extensionModal.product?.rentalDuration || "";
+                        if (unit.toLowerCase().includes("hour")) {
+                          currentEnd.setHours(
+                            currentEnd.getHours() +
+                              extensionData.additionalDays,
+                          );
+                        } else if (unit.toLowerCase().includes("week")) {
+                          currentEnd.setDate(
+                            currentEnd.getDate() +
+                              extensionData.additionalDays * 7,
+                          );
+                        } else if (unit.toLowerCase().includes("month")) {
+                          currentEnd.setMonth(
+                            currentEnd.getMonth() +
+                              extensionData.additionalDays,
+                          );
                         } else {
-                          currentEnd.setDate(currentEnd.getDate() + extensionData.additionalDays);
+                          currentEnd.setDate(
+                            currentEnd.getDate() + extensionData.additionalDays,
+                          );
                         }
                         return formatIST(currentEnd);
                       })()}
@@ -449,7 +517,9 @@ const MyOrders = () => {
               )}
 
               <div>
-                <label className="block text-sm font-semibold mb-2">Payment Mode</label>
+                <label className="block text-sm font-semibold mb-2">
+                  Payment Mode
+                </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -457,7 +527,12 @@ const MyOrders = () => {
                       name="payMode"
                       value="COD"
                       checked={extensionData.paymentMode === "COD"}
-                      onChange={(e) => setExtensionData({ ...extensionData, paymentMode: e.target.value })}
+                      onChange={(e) =>
+                        setExtensionData({
+                          ...extensionData,
+                          paymentMode: e.target.value,
+                        })
+                      }
                       className="accent-[#34658C]"
                     />
                     <span className="text-sm">COD</span>
@@ -468,7 +543,12 @@ const MyOrders = () => {
                       name="payMode"
                       value="online"
                       checked={extensionData.paymentMode === "online"}
-                      onChange={(e) => setExtensionData({ ...extensionData, paymentMode: e.target.value })}
+                      onChange={(e) =>
+                        setExtensionData({
+                          ...extensionData,
+                          paymentMode: e.target.value,
+                        })
+                      }
                       className="accent-[#34658C]"
                     />
                     <span className="text-sm">Online</span>
@@ -478,7 +558,9 @@ const MyOrders = () => {
 
               <div className="pt-4 flex gap-3">
                 <button
-                  onClick={() => setExtensionModal({ isOpen: false, order: null })}
+                  onClick={() =>
+                    setExtensionModal({ isOpen: false, order: null })
+                  }
                   className="flex-1 py-3 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
@@ -496,7 +578,6 @@ const MyOrders = () => {
         </div>
       )}
     </div>
-
   );
 };
 
