@@ -12,11 +12,16 @@ import {
   Slides,
   TopHealthServices,
   HowItWorksData,
-  ReviewsData,
+  // ReviewsData,
   CountData,
   faqData,
 } from "../../utils/Data";
-import { getAllEquipmentsApi, getNurseFiltersApi, getAllNursesApi } from "../../apis/authapis";
+import {
+  getAllEquipmentsApi,
+  getNurseFiltersApi,
+  getAllNursesApi,
+  getRandomReviewsApi,
+} from "../../apis/authapis";
 import { MdKeyboardArrowLeft } from "react-icons/md";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { TiStarFullOutline } from "react-icons/ti";
@@ -28,7 +33,7 @@ const Home = () => {
   const { isAuthenticated } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchActiveIndex, setSearchActiveIndex] = useState(0);
-  const slidesPerView = 3;
+  const slidesPerView = 4;
 
   // Home page search states
   const [serviceQuery, setServiceQuery] = useState("");
@@ -51,7 +56,33 @@ const Home = () => {
   const [selectedItemType, setSelectedItemType] = useState("equipment");
 
   const lastIndex = TopHealthServices.length - slidesPerView;
-  const lastIndexReview = ReviewsData.length - slidesPerView;
+
+  //reviews states
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [reviewsError, setReviewsError] = useState(null);
+  const lastIndexReview =
+    reviews.length > slidesPerView ? reviews.length - slidesPerView : 0;
+
+  // Fetch random reviews on component mount
+  useEffect(() => {
+    const fetchRandomReviews = async () => {
+      try {
+        setLoadingReviews(true);
+        const response = await getRandomReviewsApi();
+        if (response.data && response.data.data) {
+          setReviews(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching random reviews:", error);
+        setReviewsError("Failed to load reviews");
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    fetchRandomReviews();
+  }, []);
 
   // Handle home page search - Fetch and display results on same page
   const handleHomeSearch = async () => {
@@ -357,13 +388,16 @@ const Home = () => {
               onSwiper={(swiper) => setSearchActiveIndex(swiper.realIndex)}
               breakpoints={{
                 0: {
-                  slidesPerView: 1,
+                  slidesPerView: 1, // mobile
                 },
-                768: {
-                  slidesPerView: 1,
+                640: {
+                  slidesPerView: 2, // small tablet
                 },
                 1024: {
-                  slidesPerView: 2,
+                  slidesPerView: 3, // laptop
+                },
+                1280: {
+                  slidesPerView: 4, // large screen
                 },
               }}
             >
@@ -404,7 +438,7 @@ const Home = () => {
                 searchResults.map((result, index) => {
                   // Check if the result ID exists in allServices and use that data if matched
                   const matchedService = allServices.find(
-                    (s) => s._id === result._id
+                    (s) => s._id === result._id,
                   );
                   const service = matchedService || result;
 
@@ -484,7 +518,9 @@ const Home = () => {
                                     className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                                     onClick={() => {
                                       if (!isAuthenticated) {
-                                        toast.error('Please login to add items to cart');
+                                        toast.error(
+                                          "Please login to add items to cart",
+                                        );
                                         return;
                                       }
                                       setSelectedEquipment(service);
@@ -519,8 +555,7 @@ const Home = () => {
             </Swiper>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* Our Top Equipments */}
       <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] pb-[200px] md:pb-[60px]">
@@ -611,8 +646,10 @@ const Home = () => {
             ) : (
               // Data loaded successfully
               equipments
-                .filter((item, index, self) =>
-                  index === self.findIndex((t) => t.subCategory === item.subCategory)
+                .filter(
+                  (item, index, self) =>
+                    index ===
+                    self.findIndex((t) => t.subCategory === item.subCategory),
                 )
                 .slice(0, 4)
                 .map((data, index) => {
@@ -884,7 +921,7 @@ const Home = () => {
           </div>
           <Swiper
             modules={[Pagination, Navigation]}
-            spaceBetween={2}
+            spaceBetween={20}
             navigation={{
               nextEl: ".custom-next",
               prevEl: ".custom-prev",
@@ -904,13 +941,31 @@ const Home = () => {
               },
             }}
           >
-            {ReviewsData.map((data, index) => (
-              <SwiperSlide key={index} className="p-1">
-                <div
-                  className="shadow-md rounded-[12px]  bg-white p-4 md:p-[24px] flex flex-col gap-4"
-                  style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
-                >
-                  <div className="  ">
+            {loadingReviews ? (
+              <SwiperSlide>
+                <div className="p-6 text-center text-[#34658C] font-semibold">
+                  Loading reviews...
+                </div>
+              </SwiperSlide>
+            ) : reviewsError ? (
+              <SwiperSlide>
+                <div className="p-6 text-center text-red-500 font-semibold">
+                  Failed to load reviews
+                </div>
+              </SwiperSlide>
+            ) : reviews.length === 0 ? (
+              <SwiperSlide>
+                <div className="p-6 text-center text-[#34658C] font-semibold">
+                  No reviews available
+                </div>
+              </SwiperSlide>
+            ) : (
+              reviews.map((data, index) => (
+                <SwiperSlide key={data._id || index} className="p-1 flex h-auto">
+                  <div
+                    className="shadow-md rounded-[12px] bg-white p-4 md:p-[24px] flex flex-col justify-between gap-4 w-full h-full"
+                    style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                  >
                     <div className="flex justify-start">
                       <img
                         src="/assets/homeImages/WhatOurUserSaySection/start-quote.png"
@@ -918,9 +973,12 @@ const Home = () => {
                         className="w-[24px] h-[24px] md:w-[32px] md:h-[32px]"
                       />
                     </div>
-                    <div className="font-sans text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] italic">
-                      {data.content}
+
+                    <div className="italic text-[14px] md:text-[16px]">
+                      {data.reviewcontent ||
+                        "Excellent service and highly recommended!"}
                     </div>
+
                     <div className="flex justify-end">
                       <img
                         src="/assets/homeImages/WhatOurUserSaySection/end-quote.png"
@@ -928,6 +986,8 @@ const Home = () => {
                         className="w-[24px] h-[24px] md:w-[32px] md:h-[32px]"
                       />
                     </div>
+
+                    {/* ⭐ Rating */}
                     <div className="flex gap-1">
                       {Array.from({ length: Number(data.rating) }).map(
                         (_, i) => (
@@ -938,25 +998,32 @@ const Home = () => {
                         ),
                       )}
                     </div>
-                    <div className="flex gap-3 mt-3">
+
+                    {/* 👤 User Info */}
+                    <div className="flex gap-3 mt-3 items-center">
                       <img
-                        src={data.image}
-                        alt={data.name}
-                        className="w-[60px] h-[60px] rounded-full"
+                        src={
+                          data.user?.profileUrl ||
+                          "/assets/NurseImages/default-nurse.png"
+                        }
+                        alt="user"
+                        className="w-[60px] h-[60px] rounded-full object-cover"
                       />
                       <div className="flex flex-col">
-                        <h1 className="font-outfit text-[16px]  md:text-[20px] font-semibold tracking-[0.4px]">
-                          {data.name}
+                        <h1 className="font-outfit text-[16px] md:text-[20px] font-semibold">
+                          {data.user?.firstname} {data.user?.lastname}
                         </h1>
-                        <p className="font-sans  italic  text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px]">
-                          {data.place}
+                        <p className="italic text-[14px] md:text-[16px]">
+                          {data.productType === "equipment"
+                            ? "Equipment Rental"
+                            : "Healthcare Service"}
                         </p>
                       </div>
                     </div>
                   </div>
-                </div>
-              </SwiperSlide>
-            ))}
+                </SwiperSlide>
+              ))
+            )}
           </Swiper>
         </div>
       </div>
@@ -1055,20 +1122,18 @@ const Home = () => {
           ))}
         </div>
       </div>
-      {
-        isModalOpen && (
-          <AddToCartModal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setSelectedEquipment(null);
-            }}
-            itemData={selectedEquipment}
-            itemType={selectedItemType}
-          />
-        )
-      }
-    </div >
+      {isModalOpen && (
+        <AddToCartModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedEquipment(null);
+          }}
+          itemData={selectedEquipment}
+          itemType={selectedItemType}
+        />
+      )}
+    </div>
   );
 };
 

@@ -406,3 +406,6 @@ export const getAllNotificationsApi = (page = 1, limit = 10) => {
 export const getNotificationByIdApi = (id) => {
   return axiosInstance.get(`/user/notifications/${id}`);
 };
+export const getRandomReviewsApi = () => {
+  return axiosInstance.get(`/reviews/random/all`);
+}

@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import {
   CountData,
   HowItWorksData,
-  ReviewsData,
   TopHealthServices,
   whySehatMitra,
 } from "../../utils/Data";
+import { getRandomReviewsApi } from "../../apis/authapis";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
@@ -19,10 +19,36 @@ import { TiStarFullOutline } from "react-icons/ti";
 
 const AboutUs = () => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const slidesPerView = 3;
+  const [currentSlidesPerView, setCurrentSlidesPerView] = useState(1);
+
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [reviewsError, setReviewsError] = useState(null);
 
   // const lastIndex = ReviewsData.length - slidesPerView;
-  const lastIndexReview = ReviewsData.length - slidesPerView;
+  const lastIndexReview =
+    reviews.length > currentSlidesPerView
+      ? reviews.length - currentSlidesPerView
+      : 0;
+  useEffect(() => {
+    const fetchRandomReviews = async () => {
+      try {
+        setLoadingReviews(true);
+        const response = await getRandomReviewsApi();
+
+        if (response.data && response.data.data) {
+          setReviews(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching random reviews:", error);
+        setReviewsError("Failed to load reviews");
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    fetchRandomReviews();
+  }, []);
 
   return (
     <div className="space-y-[60px] md:space-y-[80px] xl:space-y-[120px]">
@@ -63,8 +89,11 @@ const AboutUs = () => {
             </p>
           </div>
           <div>
-            
-            <img src="/assets/AboutImages/ourStoryImages/ourstoryImage.png" alt="ourStoryImage" className="w-full h-full object-cover"/>
+            <img
+              src="/assets/AboutImages/ourStoryImages/ourstoryImage.png"
+              alt="ourStoryImage"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </div>
@@ -187,238 +216,271 @@ const AboutUs = () => {
       </div>
 
       {/* How Sehatmitra Works */}
-            <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px]">
-              <h1 className="text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] xl:tracking-[0.96px] leading-[100%] font-bold mb-3 text-[#34658C] text-center">
-                How Sehatmitra Works
-              </h1>
-              <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center mb-4 md:mb-6 xl:mb-[44px]">
-                Your health services, simplified. Book a test, nurse, or checkup in
-                just a few easy steps.
-              </p>
-              <div className="w-full flex flex-col items-center mt-10">
-                <div
-                  className="
+      <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px]">
+        <h1 className="text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] xl:tracking-[0.96px] leading-[100%] font-bold mb-3 text-[#34658C] text-center">
+          How Sehatmitra Works
+        </h1>
+        <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center mb-4 md:mb-6 xl:mb-[44px]">
+          Your health services, simplified. Book a test, nurse, or checkup in
+          just a few easy steps.
+        </p>
+        <div className="w-full flex flex-col items-center mt-10">
+          <div
+            className="
           grid grid-cols-1 
           md:grid-cols-2 
           xl:grid-cols-4 
          md:gap-8
           relative
         "
+          >
+            {HowItWorksData.map((item, index) => {
+              const isLast = index === HowItWorksData.length - 1;
+
+              return (
+                <div
+                  key={item.id}
+                  className="relative flex flex-col items-center"
                 >
-                  {HowItWorksData.map((item, index) => {
-                    const isLast = index === HowItWorksData.length - 1;
-      
-                    return (
-                      <div
-                        key={item.id}
-                        className="relative flex flex-col items-center"
-                      >
-                        {/* CARD */}
-                        <div
-                          className="flex flex-col items-center text-center gap-3 md:gap-4 px-6 py-6 rounded-[12px] bg-white"
-                          style={{ boxShadow: "0px 0px 6px 0px #00000040" }}
-                        >
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-[48px] h-[48px] md:w-[60px] md:h-[60px]"
-                          />
-      
-                          <h2 className="text-[20px] font-outfit font-semibold text-black">
-                            {item.title}
-                          </h2>
-      
-                          <p className="text-[14px] leading-[22px] tracking-[0.56px] text-[#3D3D3D] font-semibold">
-                            {item.subtitle}
-                          </p>
-                        </div>
-      
-                        {/* -------- MOBILE ARROWS (vertical) -------- */}
-                        {!isLast && (
-                          <img
-                            src="/assets/homeImages/howsehatmitraworksection/arrow.png"
-                            className="md:hidden w-[32px] h-[12px] rotate-90 my-4"
-                          />
-                        )}
-      
-                        {/* -------- MD ARROW LOGIC (2x2) -------- */}
-                        {/* 1 → 2 */}
-                        {index === 0 && (
-                          <img
-                            src="/assets/homeImages/howsehatmitraworksection/arrow.png"
-                            className="hidden md:block xl:hidden absolute top-1/2 -right-8 -translate-y-1/2 w-[32px]"
-                          />
-                        )}
-      
-                        {/* 2 ↓ 3 */}
-                        {index === 1 && (
-                          <img
-                            src="/assets/homeImages/howsehatmitraworksection/arrow.png"
-                            className="hidden md:block xl:hidden absolute bottom-[-20px] left-1/2 -translate-x-1/2 rotate-90 w-[32px]"
-                          />
-                        )}
-      
-                        {/* 3 ← 4 */}
-                        {index === 3 && (
-                          <img
-                            src="/assets/homeImages/howsehatmitraworksection/arrow.png"
-                            className="hidden md:block xl:hidden absolute top-1/2 -left-8 -translate-y-1/2 rotate-180 w-[32px]"
-                          />
-                        )}
-      
-                        {/* 4 ↑ 1 */}
-                        {index === 2 && (
-                          <img
-                            src="/assets/homeImages/howsehatmitraworksection/arrow.png"
-                            className="hidden md:block xl:hidden absolute top-[-20px] left-1/2 -translate-x-1/2 rotate-[270deg] w-[32px]"
-                          />
-                        )}
-      
-                        {/* -------- XL ARROWS: 1 → 2 → 3 → 4 -------- */}
-                        {!isLast && (
-                          <img
-                            src="/assets/homeImages/howsehatmitraworksection/arrow.png"
-                            className="hidden xl:block absolute top-1/2 -right-8 -translate-y-1/2 w-[32px]"
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+                  {/* CARD */}
+                  <div
+                    className="flex flex-col items-center text-center gap-3 md:gap-4 px-6 py-6 rounded-[12px] bg-white"
+                    style={{ boxShadow: "0px 0px 6px 0px #00000040" }}
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-[48px] h-[48px] md:w-[60px] md:h-[60px]"
+                    />
+
+                    <h2 className="text-[20px] font-outfit font-semibold text-black">
+                      {item.title}
+                    </h2>
+
+                    <p className="text-[14px] leading-[22px] tracking-[0.56px] text-[#3D3D3D] font-semibold">
+                      {item.subtitle}
+                    </p>
+                  </div>
+
+                  {/* -------- MOBILE ARROWS (vertical) -------- */}
+                  {!isLast && (
+                    <img
+                      src="/assets/homeImages/howsehatmitraworksection/arrow.png"
+                      className="md:hidden w-[32px] h-[12px] rotate-90 my-4"
+                    />
+                  )}
+
+                  {/* -------- MD ARROW LOGIC (2x2) -------- */}
+                  {/* 1 → 2 */}
+                  {index === 0 && (
+                    <img
+                      src="/assets/homeImages/howsehatmitraworksection/arrow.png"
+                      className="hidden md:block xl:hidden absolute top-1/2 -right-8 -translate-y-1/2 w-[32px]"
+                    />
+                  )}
+
+                  {/* 2 ↓ 3 */}
+                  {index === 1 && (
+                    <img
+                      src="/assets/homeImages/howsehatmitraworksection/arrow.png"
+                      className="hidden md:block xl:hidden absolute bottom-[-20px] left-1/2 -translate-x-1/2 rotate-90 w-[32px]"
+                    />
+                  )}
+
+                  {/* 3 ← 4 */}
+                  {index === 3 && (
+                    <img
+                      src="/assets/homeImages/howsehatmitraworksection/arrow.png"
+                      className="hidden md:block xl:hidden absolute top-1/2 -left-8 -translate-y-1/2 rotate-180 w-[32px]"
+                    />
+                  )}
+
+                  {/* 4 ↑ 1 */}
+                  {index === 2 && (
+                    <img
+                      src="/assets/homeImages/howsehatmitraworksection/arrow.png"
+                      className="hidden md:block xl:hidden absolute top-[-20px] left-1/2 -translate-x-1/2 rotate-[270deg] w-[32px]"
+                    />
+                  )}
+
+                  {/* -------- XL ARROWS: 1 → 2 → 3 → 4 -------- */}
+                  {!isLast && (
+                    <img
+                      src="/assets/homeImages/howsehatmitraworksection/arrow.png"
+                      className="hidden xl:block absolute top-1/2 -right-8 -translate-y-1/2 w-[32px]"
+                    />
+                  )}
                 </div>
-              </div>
-            </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       {/* What Our Users Say */}
-           <div>
-             <div className="bg-[#34658C]">
-               <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] pt-[40px] md:pt-[80px] pb-[200px] md:pb-[280px]">
-                 <h1 className="text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] xl:tracking-[0.96px] leading-[100%] leading-[100%] font-bold text-white text-center mb-2">
-                   What Our Users Say
-                 </h1>
-                 <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center text-white ">
-                   Real stories from people who found trusted healthcare services
-                   through Sehat Metra.
-                 </p>
-               </div>
-             </div>
-             <div className="relative  max-w-[250px] md:max-w-[604px] lg:max-w-[704px] xl:max-w-[1200px] mx-auto -mt-[170px] md:-mt-[210px]">
-               {/* left chervon  */}
-               <div
-                 className={`custom-prev absolute left-[-30px] md:left-[-50px] top-1/2 -translate-y-1/2 
-         bg-[#A2CD48] w-[24px] h-[24px] md:w-[32px] md:h-[32px] rounded-full flex items-center justify-center
-         ${activeIndex === 0 ? "opacity-40 pointer-events-none" : ""}`}
-               >
-                 <MdKeyboardArrowLeft className="text-white text-xl" />
-               </div>
-               {/* right chervon  */}
-               <div
-                 className={`custom-next absolute right-[-30px] md:right-[-50px] top-1/2 -translate-y-1/2 
-         bg-[#A2CD48] w-[24px] h-[24px] md:w-[32px] md:h-[32px] rounded-full flex items-center justify-center
-         ${activeIndex === lastIndexReview ? "opacity-40 pointer-events-none" : ""}`}
-               >
-                 <MdKeyboardArrowRight className="text-white text-xl" />
-               </div>
-               <Swiper
-                 modules={[Pagination, Navigation]}
-                
-                 spaceBetween={2}
-                 navigation={{
-                   nextEl: ".custom-next",
-                   prevEl: ".custom-prev",
-                 }}
-                 onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-                 onSwiper={(swiper) => setActiveIndex(swiper.realIndex)}
-                 // className="px-[20px]"
-                breakpoints={{
-                   0: {
-                     slidesPerView: 1, // mobile
-                   },
-                   768: {
-                     slidesPerView: 2, 
-                   },
-                   1280: {
-                     slidesPerView: 3, 
-                   },
-                 }}
-               >
-                 {ReviewsData.map((data, index) => (
-                   <SwiperSlide key={index} className="p-1">
-                     <div
-                       className="shadow-md rounded-[12px]  bg-white p-4 md:p-[24px] flex flex-col gap-4"
-                       style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
-                     >
-                       <div className="  ">
-                         <div className="flex justify-start">
-                           <img
-                             src="/assets/homeImages/WhatOurUserSaySection/start-quote.png"
-                             alt="start quote"
-                             className="w-[24px] h-[24px] md:w-[32px] md:h-[32px]"
-                           />
-                         </div>
-                         <div className="font-sans text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] italic">
-                           {data.content}
-                         </div>
-                         <div className="flex justify-end">
-                           <img
-                             src="/assets/homeImages/WhatOurUserSaySection/end-quote.png"
-                             alt="end quote"
-                             className="w-[24px] h-[24px] md:w-[32px] md:h-[32px]"
-                           />
-                         </div>
-                         <div className="flex gap-1">
-                           {Array.from({ length: Number(data.rating) }).map(
-                             (_, i) => (
-                               <TiStarFullOutline
-                                 key={i}
-                                 className="text-[16px] md:text-[24px] text-[#ED3237]"
-                               />
-                             )
-                           )}
-                         </div>
-                         <div className="flex gap-3 mt-3">
-                           <img
-                             src={data.image}
-                             alt={data.name}
-                             className="w-[60px] h-[60px] rounded-full"
-                           />
-                           <div className="flex flex-col">
-                             <h1 className="font-outfit text-[16px]  md:text-[20px] font-semibold tracking-[0.4px]">
-                               {data.name}
-                             </h1>
-                             <p className="font-sans  italic  text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px]">
-                               {data.place}
-                             </p>
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-                   </SwiperSlide>
-                 ))}
-               </Swiper>
-             </div>
-           </div>
-
-       {/* Count section */}
-            <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] grid grid-cols-2  xl:grid-cols-4 gap-6 pb-[60px] md:pb-[80px] xl:pb-[120px] ">
-              {CountData.map((data) => (
-                <div key={data.id} className="flex flex-col items-center gap-4 xl:gap-[26px]">
-                  <div
-                    className="rounded-full w-[100px] h-[100px] md:w-[140px] md:h-[140px] flex justify-center items-center "
-                    style={{
-                      background:
-                        "linear-gradient(180deg, #5D84A3 0%, #1D384D 95.04%)",
-                    }}
-                  >
-                    <h1 className="text-[28px] md:text-[40px] font-semibold text-white font-outfit">
-                      {data.count}
-                    </h1>
-                  </div>
-                  <p className="text-[16px] md:text-[20px] font-medium text-[#1D384D] font-outfit text-center">
-                    {data.title}
-                  </p>
+      <div>
+        <div className="bg-[#34658C]">
+          <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] pt-[40px] md:pt-[80px] pb-[200px] md:pb-[280px]">
+            <h1 className="text-[28px] tracking-[0.56px] md:text-[36px] md:tracking-[0.72px] xl:text-[48px] xl:tracking-[0.96px] leading-[100%] leading-[100%] font-bold text-white text-center mb-2">
+              What Our Users Say
+            </h1>
+            <p className="text-[14px] leading-[22px] tracking-[0.56px] md:text-[16px] md:leading-[26px] md:tracking-[0.64px] text-center text-white ">
+              Real stories from people who found trusted healthcare services
+              through Sehat Metra.
+            </p>
+          </div>
+        </div>
+        <div className="relative  max-w-[250px] md:max-w-[604px] lg:max-w-[704px] xl:max-w-[1200px] mx-auto -mt-[170px] md:-mt-[210px]">
+          {/* left chervon  */}
+          <div
+            className={`about-review-prev absolute left-[-30px] md:left-[-50px] top-1/2 -translate-y-1/2 
+  z-10
+  bg-[#A2CD48] w-[24px] h-[24px] md:w-[32px] md:h-[32px] rounded-full flex items-center justify-center
+  ${activeIndex === 0 ? "opacity-40 pointer-events-none" : ""}`}
+          >
+            <MdKeyboardArrowLeft className="text-white text-xl" />
+          </div>
+          {/* right chervon  */}
+          <div
+            className={`about-review-next absolute right-[-30px] md:right-[-50px] top-1/2 -translate-y-1/2 
+  z-10
+  bg-[#A2CD48] w-[24px] h-[24px] md:w-[32px] md:h-[32px] rounded-full flex items-center justify-center
+  ${activeIndex === lastIndexReview ? "opacity-40 pointer-events-none" : ""}`}
+          >
+            <MdKeyboardArrowRight className="text-white text-xl" />
+          </div>
+          <Swiper
+            key={reviews.length} // ✅ IMPORTANT FIX
+            modules={[Navigation]}
+            spaceBetween={20}
+            observer={true}
+            observeParents={true}
+            navigation={{
+              nextEl: ".about-review-next",
+              prevEl: ".about-review-prev",
+            }}
+            onSlideChange={(swiper) => {
+              setActiveIndex(swiper.realIndex);
+              setCurrentSlidesPerView(swiper.params.slidesPerView);
+            }}
+            onSwiper={(swiper) => setActiveIndex(swiper.realIndex)}
+            breakpoints={{
+              0: { slidesPerView: 1 },
+              768: { slidesPerView: 2 },
+              1280: { slidesPerView: 3 },
+            }}
+          >
+            {loadingReviews ? (
+              <SwiperSlide>
+                <div className="p-6 text-center text-[#34658C] font-semibold">
+                  Loading reviews...
                 </div>
-              ))}
+              </SwiperSlide>
+            ) : reviewsError ? (
+              <SwiperSlide>
+                <div className="p-6 text-center text-red-500 font-semibold">
+                  {reviewsError}
+                </div>
+              </SwiperSlide>
+            ) : reviews.length === 0 ? (
+              <SwiperSlide>
+                <div className="p-6 text-center text-[#34658C] font-semibold">
+                  No reviews available
+                </div>
+              </SwiperSlide>
+            ) : (
+              reviews.map((data, index) => (
+                <SwiperSlide key={data._id || index} className="p-1">
+                  <div
+                    className="shadow-md rounded-[12px] bg-white p-4 md:p-[24px] flex flex-col gap-4"
+                    style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
+                  >
+                    <div className="flex justify-start">
+                      <img
+                        src="/assets/homeImages/WhatOurUserSaySection/start-quote.png"
+                        alt="start quote"
+                        className="w-[24px] h-[24px] md:w-[32px] md:h-[32px]"
+                      />
+                    </div>
+
+                    <div className="italic text-[14px] md:text-[16px]">
+                      {data.reviewcontent ||
+                        "Excellent service and highly recommended!"}
+                    </div>
+
+                    <div className="flex justify-end">
+                      <img
+                        src="/assets/homeImages/WhatOurUserSaySection/end-quote.png"
+                        alt="end quote"
+                        className="w-[24px] h-[24px] md:w-[32px] md:h-[32px]"
+                      />
+                    </div>
+
+                    {/* ⭐ Rating */}
+                    <div className="flex gap-1">
+                      {Array.from({ length: Number(data.rating) }).map(
+                        (_, i) => (
+                          <TiStarFullOutline
+                            key={i}
+                            className="text-[16px] md:text-[24px] text-[#ED3237]"
+                          />
+                        ),
+                      )}
+                    </div>
+
+                    {/* 👤 User Info */}
+                    <div className="flex gap-3 mt-3 items-center">
+                      <img
+                        src={
+                          data.user?.profileUrl ||
+                          "/assets/NurseImages/default-nurse.png"
+                        }
+                        alt="user"
+                        className="w-[60px] h-[60px] rounded-full object-cover"
+                      />
+                      <div className="flex flex-col">
+                        <h1 className="font-outfit text-[16px] md:text-[20px] font-semibold">
+                          {data.user?.firstname} {data.user?.lastname}
+                        </h1>
+                        <p className="italic text-[14px] md:text-[16px]">
+                          {data.productType === "equipment"
+                            ? "Equipment Rental"
+                            : "Healthcare Service"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))
+            )}
+          </Swiper>
+        </div>
+      </div>
+
+      {/* Count section */}
+      <div className="max-w-[1440px] mx-auto px-5 md:px-[32px] xl:px-[120px] grid grid-cols-2  xl:grid-cols-4 gap-6 pb-[60px] md:pb-[80px] xl:pb-[120px] ">
+        {CountData.map((data) => (
+          <div
+            key={data.id}
+            className="flex flex-col items-center gap-4 xl:gap-[26px]"
+          >
+            <div
+              className="rounded-full w-[100px] h-[100px] md:w-[140px] md:h-[140px] flex justify-center items-center "
+              style={{
+                background:
+                  "linear-gradient(180deg, #5D84A3 0%, #1D384D 95.04%)",
+              }}
+            >
+              <h1 className="text-[28px] md:text-[40px] font-semibold text-white font-outfit">
+                {data.count}
+              </h1>
             </div>
+            <p className="text-[16px] md:text-[20px] font-medium text-[#1D384D] font-outfit text-center">
+              {data.title}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
