@@ -350,11 +350,12 @@ const AboutUs = () => {
             <MdKeyboardArrowRight className="text-white text-xl" />
           </div>
           <Swiper
-            key={reviews.length} // ✅ IMPORTANT FIX
+            key={reviews.length}
             modules={[Navigation]}
             spaceBetween={20}
             observer={true}
             observeParents={true}
+            className="review-swiper"
             navigation={{
               nextEl: ".about-review-next",
               prevEl: ".about-review-prev",
@@ -363,7 +364,10 @@ const AboutUs = () => {
               setActiveIndex(swiper.realIndex);
               setCurrentSlidesPerView(swiper.params.slidesPerView);
             }}
-            onSwiper={(swiper) => setActiveIndex(swiper.realIndex)}
+            onSwiper={(swiper) => {
+              setActiveIndex(swiper.realIndex);
+              setCurrentSlidesPerView(swiper.params.slidesPerView);
+            }}
             breakpoints={{
               0: { slidesPerView: 1 },
               768: { slidesPerView: 2 },
@@ -390,9 +394,9 @@ const AboutUs = () => {
               </SwiperSlide>
             ) : (
               reviews.map((data, index) => (
-                <SwiperSlide key={data._id || index} className="p-1">
+                <SwiperSlide key={data._id || index} className="p-1 flex h-auto">
                   <div
-                    className="shadow-md rounded-[12px] bg-white p-4 md:p-[24px] flex flex-col gap-4"
+                    className="shadow-md rounded-[12px] bg-white p-4 md:p-[24px] flex flex-col gap-4 w-full h-full"
                     style={{ boxShadow: "0px 0px 4px 0px #00000040" }}
                   >
                     <div className="flex justify-start">

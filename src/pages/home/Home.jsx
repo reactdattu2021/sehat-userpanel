@@ -33,6 +33,8 @@ const Home = () => {
   const { isAuthenticated } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchActiveIndex, setSearchActiveIndex] = useState(0);
+  const [reviewActiveIndex, setReviewActiveIndex] = useState(0);
+  const [currentReviewSlidesPerView, setCurrentReviewSlidesPerView] = useState(1);
   const slidesPerView = 4;
 
   // Home page search states
@@ -62,7 +64,9 @@ const Home = () => {
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [reviewsError, setReviewsError] = useState(null);
   const lastIndexReview =
-    reviews.length > slidesPerView ? reviews.length - slidesPerView : 0;
+    reviews.length > currentReviewSlidesPerView
+      ? reviews.length - currentReviewSlidesPerView
+      : 0;
 
   // Fetch random reviews on component mount
   useEffect(() => {
@@ -905,33 +909,44 @@ const Home = () => {
         <div className="relative max-w-[250px] md:max-w-[604px] lg:max-w-[704px] xl:max-w-[1200px] mx-auto -mt-[170px] md:-mt-[210px]">
           {/* left chervon  */}
           <div
-            className={`custom-prev absolute left-[-30px] md:left-[-50px] top-1/2 -translate-y-1/2 
+            className={`home-review-prev absolute left-[-30px] md:left-[-50px] top-1/2 -translate-y-1/2 
+    z-10
     bg-[#A2CD48] w-[24px] h-[24px] md:w-[32px] md:h-[32px] rounded-full flex items-center justify-center
-    ${activeIndex === 0 ? "opacity-40 pointer-events-none" : ""}`}
+    ${reviewActiveIndex === 0 ? "opacity-40 pointer-events-none" : ""}`}
           >
             <MdKeyboardArrowLeft className="text-white text-xl" />
           </div>
           {/* right chervon  */}
           <div
-            className={`custom-next absolute right-[-30px] md:right-[-50px] top-1/2 -translate-y-1/2 
+            className={`home-review-next absolute right-[-30px] md:right-[-50px] top-1/2 -translate-y-1/2 
+    z-10
     bg-[#A2CD48] w-[24px] h-[24px] md:w-[32px] md:h-[32px] rounded-full flex items-center justify-center
-    ${activeIndex === lastIndexReview ? "opacity-40 pointer-events-none" : ""}`}
+    ${reviewActiveIndex === lastIndexReview ? "opacity-40 pointer-events-none" : ""}`}
           >
             <MdKeyboardArrowRight className="text-white text-xl" />
           </div>
           <Swiper
-            modules={[Pagination, Navigation]}
+            key={reviews.length}
+            modules={[Navigation]}
             spaceBetween={20}
+            observer={true}
+            observeParents={true}
+            className="review-swiper"
             navigation={{
-              nextEl: ".custom-next",
-              prevEl: ".custom-prev",
+              nextEl: ".home-review-next",
+              prevEl: ".home-review-prev",
             }}
-            onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-            onSwiper={(swiper) => setActiveIndex(swiper.realIndex)}
-            // className="px-[20px]"
+            onSlideChange={(swiper) => {
+              setReviewActiveIndex(swiper.realIndex);
+              setCurrentReviewSlidesPerView(swiper.params.slidesPerView);
+            }}
+            onSwiper={(swiper) => {
+              setReviewActiveIndex(swiper.realIndex);
+              setCurrentReviewSlidesPerView(swiper.params.slidesPerView);
+            }}
             breakpoints={{
               0: {
-                slidesPerView: 1, // mobile
+                slidesPerView: 1,
               },
               768: {
                 slidesPerView: 2,

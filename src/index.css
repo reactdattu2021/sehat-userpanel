@@ -59,3 +59,11 @@ button{
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out forwards;
 }
+
+/* Equal-height review cards across all slides in a row */
+.review-swiper .swiper-wrapper {
+  align-items: stretch;
+}
+.review-swiper .swiper-slide {
+  height: auto;
+}
