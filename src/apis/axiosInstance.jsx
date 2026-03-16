@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5002/Sehatmitra"
+    baseURL:"https://sehatmitrabackend.onrender.com/Sehatmitra"
 })
 
 // ✅ AUTO-ATTACH JWT TOKEN (Only for protected routes)
