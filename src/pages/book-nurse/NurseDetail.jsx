@@ -39,9 +39,9 @@ const NurseDetail = () => {
     const fetchNurseDetails = async () => {
       try {
         setLoading(true);
-        console.log("Fetching nurse with ID:", nurseId);
+        // console.log("Fetching nurse with ID:", nurseId);
         const response = await getNurseByIdApi(nurseId);
-        console.log("API Response:", response.data);
+        // console.log("API Response:", response.data);
 
         if (response.data.success) {
           // API returns data.service and data.pricings separately

@@ -34,7 +34,8 @@ const Home = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchActiveIndex, setSearchActiveIndex] = useState(0);
   const [reviewActiveIndex, setReviewActiveIndex] = useState(0);
-  const [currentReviewSlidesPerView, setCurrentReviewSlidesPerView] = useState(1);
+  const [currentReviewSlidesPerView, setCurrentReviewSlidesPerView] =
+    useState(1);
   const slidesPerView = 4;
 
   // Home page search states
@@ -58,6 +59,12 @@ const Home = () => {
   const [selectedItemType, setSelectedItemType] = useState("equipment");
 
   const lastIndex = TopHealthServices.length - slidesPerView;
+  // Search slider last index
+  const searchSlidesPerView = 2; // because 1024 breakpoint shows 2
+  const searchLastIndex =
+    searchResults.length > searchSlidesPerView
+      ? searchResults.length - searchSlidesPerView
+      : 0;
 
   //reviews states
   const [reviews, setReviews] = useState([]);
@@ -155,9 +162,9 @@ const Home = () => {
 
         // Handle 401 errors gracefully - don't show error, just hide the section
         if (error.response?.status === 401) {
-          console.log(
-            "⚠️ Equipment endpoint requires authentication - hiding section",
-          );
+          // console.log(
+          //   "⚠️ Equipment endpoint requires authentication - hiding section",
+          // );
           setEquipments([]); // Set empty array to hide the section
           setEquipmentError(null); // Don't show error message
         } else {
@@ -364,8 +371,8 @@ const Home = () => {
             {serviceQuery && locationQuery && " in "}
             {locationQuery && `"${locationQuery}"`}
           </p> */}
-          <div className="relative max-w-[1200px] mx-auto ">
-            <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 flex gap-4">
+          <div className="relative max-w-[1200px] mx-auto pb-[60px]">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full mt-4 flex gap-4 z-20">
               <div
                 className={`custom-prev-search
     bg-[#A2CD48] w-[32px] h-[32px] rounded-full flex items-center justify-center
@@ -376,33 +383,28 @@ const Home = () => {
               <div
                 className={`custom-next-search 
     bg-[#A2CD48] w-[32px] h-[32px] rounded-full flex items-center justify-center
-    ${searchActiveIndex === lastIndex ? "opacity-40 pointer-events-none" : ""}`}
+    ${searchActiveIndex === searchLastIndex ? "opacity-40 pointer-events-none" : ""}`}
               >
                 <MdKeyboardArrowRight className="text-white text-xl" />
               </div>
             </div>
             <Swiper
+              key={searchResults.length}
               modules={[Pagination, Navigation]}
+              observer={true}
+              observeParents={true}
               spaceBetween={20}
-              navigation={{
-                nextEl: ".custom-next-search",
-                prevEl: ".custom-prev-search",
-              }}
+              // navigation={{
+              //   nextEl: ".custom-next-search",
+              //   prevEl: ".custom-prev-search",
+              // }}
+              navigation={true}
               onSlideChange={(swiper) => setSearchActiveIndex(swiper.realIndex)}
               onSwiper={(swiper) => setSearchActiveIndex(swiper.realIndex)}
               breakpoints={{
-                0: {
-                  slidesPerView: 1, // mobile
-                },
-                640: {
-                  slidesPerView: 2, // small tablet
-                },
-                1024: {
-                  slidesPerView: 3, // laptop
-                },
-                1280: {
-                  slidesPerView: 4, // large screen
-                },
+                0: { slidesPerView: 1 },
+                768: { slidesPerView: 1 },
+                1024: { slidesPerView: 2 },
               }}
             >
               {loadingSearch ? (
@@ -483,7 +485,7 @@ const Home = () => {
                             />
                           </div>
                           <div className="col-span-12 md:col-span-7">
-                            <div className="flex flex-col justify-center h-full gap-[6px]">
+                            <div className="flex flex-col h-full gap-[10px]">
                               <h1 className="text-[20px] tracking-[0.4px] md:text-[24px] md:tracking-[0.48px] text-[#34658C] font-semibold">
                                 {service.serviceName || service.fullName}
                               </h1>
@@ -517,7 +519,7 @@ const Home = () => {
                                     </span>
                                   </p>
                                 )}
-                                <div className="flex gap-2 mt-[6px]">
+                                <div className="flex gap-2 mt-[6px] w-full">
                                   <button
                                     className="bg-[#34658C] text-white px-4 md:px-8 py-2 rounded-[12px] text-[14px] tracking-[0.28px] md:text-[16px] md:tracking-[0.32px] font-semibold font-outfit"
                                     onClick={() => {
@@ -571,7 +573,7 @@ const Home = () => {
           your home with quick setup and reliable support.
         </p>
         <div className="relative max-w-[1200px] mx-auto ">
-          <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 flex gap-4">
+          <div className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 flex gap-4 ">
             {/* left chervon  */}
             <div
               className={`custom-prev
@@ -976,7 +978,10 @@ const Home = () => {
               </SwiperSlide>
             ) : (
               reviews.map((data, index) => (
-                <SwiperSlide key={data._id || index} className="p-1 flex h-auto">
+                <SwiperSlide
+                  key={data._id || index}
+                  className="p-1 flex h-auto"
+                >
                   <div
                     className="shadow-md rounded-[12px] bg-white p-4 md:p-[24px] flex flex-col justify-between gap-4 w-full h-full"
                     style={{ boxShadow: "0px 0px 4px 0px #00000040" }}

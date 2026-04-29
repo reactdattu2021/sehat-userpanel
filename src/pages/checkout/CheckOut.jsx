@@ -173,7 +173,7 @@ const CheckOut = () => {
   const fetchCoupons = async () => {
     try {
       const response = await getAllCouponsApi(1, 50);
-      console.log("📍 Fetched coupons:", response.data);
+      // console.log("📍 Fetched coupons:", response.data);
 
       if (response.data.success) {
         const activeCoupons = response.data.data.filter(

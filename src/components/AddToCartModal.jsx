@@ -37,7 +37,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
   useEffect(() => {
     const fetchFullDetails = async () => {
       if (isOpen && itemData && !itemData.pricings) {
-        console.log('⚠️ Pricings missing, fetching full details for:', itemData._id);
+        // console.log('⚠️ Pricings missing, fetching full details for:', itemData._id);
         setFetchingDetails(true);
         try {
           let response;
@@ -50,7 +50,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
           if (response.data.success) {
             if (itemType === "equipment") {
               setFullItemData(response.data.data);
-              console.log('✅ Fetched equipment details with pricings:', response.data.data.pricings);
+              // console.log('✅ Fetched equipment details with pricings:', response.data.data.pricings);
             } else {
               // For services, combine service and pricings
               const serviceData = {
@@ -58,7 +58,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
                 pricings: response.data.data.pricings
               };
               setFullItemData(serviceData);
-              console.log('✅ Fetched service details with pricings:', response.data.data.pricings);
+              // console.log('✅ Fetched service details with pricings:', response.data.data.pricings);
             }
           }
         } catch (error) {
@@ -140,13 +140,13 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
       return;
     }
 
-    console.log("Selected Date:", selectedDate);
+    // console.log("Selected Date:", selectedDate);
 
     if (!selectedTime) {
       toast.error("Please select a start time");
       return;
     }
-    console.log("Selected Time:", selectedTime);
+    // console.log("Selected Time:", selectedTime);
 
     if (!endDate) {
       toast.error("Please select an end date");
@@ -230,7 +230,7 @@ const AddToCartModal = ({ isOpen, onClose, itemData, itemType }) => {
       rentalValue: rentalValue,
       cartquantity: quantity,
     };
-    console.log("Cart Payload before item ID:", cartPayload);
+    // console.log("Cart Payload before item ID:", cartPayload);
 
     // Add equipment or service specific fields
     if (itemType === "equipment") {

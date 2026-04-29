@@ -247,9 +247,9 @@ const CartPage = () => {
   // Delete cart item
   const deleteCartItem = async (cartId) => {
     try {
-      console.log("Deleting cart item:", cartId);
+      // console.log("Deleting cart item:", cartId);
       const response = await deleteCartApi(cartId);
-      console.log("Delete response:", response.data);
+      // console.log("Delete response:", response.data);
 
       if (response.data.success) {
         // Close the modal
@@ -763,7 +763,7 @@ const CartPage = () => {
 
                     // Only update if the duration was in lowercase
                     if (normalizedDuration !== item.rentalDuration) {
-                      console.log(`Fixing cart item ${item._id}: ${item.rentalDuration} -> ${normalizedDuration}`);
+                      // console.log(`Fixing cart item ${item._id}: ${item.rentalDuration} -> ${normalizedDuration}`);
                       await updateCartApi(item._id, {
                         rentalDuration: normalizedDuration
                       });

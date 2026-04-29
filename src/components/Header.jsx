@@ -106,7 +106,7 @@ const Header = () => {
         setSearchQuery(""); // Clear search after navigation
       } else {
         // No results found - default to equipment page
-        console.log('No results found, defaulting to equipment page');
+        // console.log('No results found, defaulting to equipment page');
         navigate(`/equipments?search=${encodeURIComponent(trimmedQuery)}`);
         setSearchQuery("");
       }

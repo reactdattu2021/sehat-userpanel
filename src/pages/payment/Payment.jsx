@@ -33,16 +33,16 @@ const Payment = () => {
     return new Promise((resolve) => {
       // Check if Razorpay is already loaded
       if (window.Razorpay) {
-        console.log("✅ Razorpay already loaded");
+        // console.log("✅ Razorpay already loaded");
         resolve(true);
         return;
       }
 
       const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
       if (existingScript) {
-        console.log("⏳ Razorpay script tag exists, waiting for load...");
+        // console.log("⏳ Razorpay script tag exists, waiting for load...");
         existingScript.onload = () => {
-          console.log("✅ Razorpay loaded from existing script");
+          // console.log("✅ Razorpay loaded from existing script");
           resolve(true);
         };
         existingScript.onerror = () => {
@@ -53,11 +53,11 @@ const Payment = () => {
       }
 
       // Create new script tag
-      console.log("📥 Loading Razorpay script...");
+      // console.log("📥 Loading Razorpay script...");
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => {
-        console.log("✅ Razorpay script loaded successfully");
+        // console.log("✅ Razorpay script loaded successfully");
         resolve(true);
       };
       script.onerror = () => {
@@ -164,14 +164,14 @@ const Payment = () => {
           amount: orderSummary.totalAmount,
             
         };
-        console.log("💰 Order Summary:",  orderSummary.totalAmount)  ;
+        // console.log("💰 Order Summary:",  orderSummary.totalAmount)  ;
 
-        console.log("📤 Cart Booking Payload:", cartPayload);
+        // console.log("📤 Cart Booking Payload:", cartPayload);
         response = await cartBookingApi(cartPayload);
       }
 
-      console.log("✅ Razorpay Order Response:", response.data);
-      console.log("🔍 STEP 1: Backend response received successfully");
+      // console.log("✅ Razorpay Order Response:", response.data);
+      // console.log("🔍 STEP 1: Backend response received successfully");
 
       if (!response.data.success) {
         console.error("❌ Backend returned success: false");
@@ -180,15 +180,15 @@ const Payment = () => {
         return;
       }
 
-      console.log("🔍 STEP 2: Backend success validated");
+      // console.log("🔍 STEP 2: Backend success validated");
 
       const { razorpay_order_id, amount, razorpay_key_id } = response.data;
 
-      console.log("🔍 STEP 3: Extracted Razorpay details:", {
-        razorpay_order_id,
-        amount,
-        razorpay_key_id: razorpay_key_id ? "Present" : "Missing"
-      });
+      // console.log("🔍 STEP 3: Extracted Razorpay details:", {
+      //   razorpay_order_id,
+      //   amount,
+      //   razorpay_key_id: razorpay_key_id ? "Present" : "Missing"
+      // });
 
       if (!razorpay_order_id || !amount) {
         console.error("❌ Missing order details:", {
@@ -201,15 +201,15 @@ const Payment = () => {
         return;
       }
 
-      console.log("🔍 STEP 4: All required fields validated, proceeding to Razorpay checkout...");
+      // console.log("🔍 STEP 4: All required fields validated, proceeding to Razorpay checkout...");
 
-      console.log("🎫 Creating Razorpay checkout with:", {
-        order_id: razorpay_order_id,
-        amount: amount,
-        amount_in_paise: amount * 100
-      });
+      // console.log("🎫 Creating Razorpay checkout with:", {
+      //   order_id: razorpay_order_id,
+      //   amount: amount,
+      //   amount_in_paise: amount * 100
+      // });
 
-      console.log("🔍 STEP 5: Checking if Razorpay script is loaded...");
+      // console.log("🔍 STEP 5: Checking if Razorpay script is loaded...");
 
       // Check if Razorpay is available
       if (!window.Razorpay) {
@@ -219,8 +219,8 @@ const Payment = () => {
         return;
       }
 
-      console.log("✅ Razorpay script loaded successfully");
-      console.log("🔍 STEP 6: Creating Razorpay options...");
+      // console.log("✅ Razorpay script loaded successfully");
+      // console.log("🔍 STEP 6: Creating Razorpay options...");
 
       // Razorpay Options
       const options = {
@@ -231,7 +231,7 @@ const Payment = () => {
         description: isDirectBooking ? "Direct Booking Payment" : "Cart Booking Payment",
         order_id: razorpay_order_id,
         handler: async function (razorpayResponse) {
-          console.log("💳 Razorpay Payment Success:", razorpayResponse);
+          // console.log("💳 Razorpay Payment Success:", razorpayResponse);
           await verifyPayment(razorpayResponse, razorpay_order_id, amount);
         },
         prefill: {
@@ -244,30 +244,30 @@ const Payment = () => {
         },
         modal: {
           ondismiss: function () {
-            console.log("⚠️ User dismissed Razorpay modal");
+            // console.log("⚠️ User dismissed Razorpay modal");
             toast.info("Payment cancelled");
             setProcessing(false);
           },
         },
       };
 
-      console.log("🔧 Razorpay options configured:", {
-        key: options.key ? "✅ Present" : "❌ Missing",
-        amount: options.amount,
-        order_id: options.order_id,
-        currency: options.currency
-      });
+      // console.log("🔧 Razorpay options configured:", {
+      //   key: options.key ? "✅ Present" : "❌ Missing",
+      //   amount: options.amount,
+      //   order_id: options.order_id,
+      //   currency: options.currency
+      // });
 
-      console.log("🔍 STEP 7: Creating Razorpay instance and opening modal...");
+      // console.log("🔍 STEP 7: Creating Razorpay instance and opening modal...");
 
       try {
         const razorpay = new window.Razorpay(options);
-        console.log("✅ Razorpay instance created successfully");
-        console.log("🔍 STEP 8: Opening Razorpay modal...");
+        // console.log("✅ Razorpay instance created successfully");
+        // console.log("🔍 STEP 8: Opening Razorpay modal...");
         razorpay.open();
-        console.log("✅ Razorpay modal opened successfully");
-        console.log("🔍 STEP 9: Waiting for user to complete payment...");
-        console.log("⏳ After payment, verifyPayment will be called automatically");
+        // console.log("✅ Razorpay modal opened successfully");
+        // console.log("🔍 STEP 9: Waiting for user to complete payment...");
+        // console.log("⏳ After payment, verifyPayment will be called automatically");
       } catch (razorpayError) {
         console.error("❌ Error creating/opening Razorpay modal:", razorpayError);
         toast.error("Failed to open payment gateway. Please try again.");
@@ -284,7 +284,7 @@ const Payment = () => {
   const verifyPayment = async (razorpayResponse, orderId, amount) => {
     try {
       setProcessing(true);
-      console.log("razor pay response", razorpayResponse);
+      // console.log("razor pay response", razorpayResponse);
 
       const verifyPayload = {
         razorpay_order_id: orderId,
@@ -309,11 +309,11 @@ const Payment = () => {
         verifyPayload.amount = amount; // Add amount for cart bookings
       }
 
-      console.log("📤 Verify Payment Payload:", verifyPayload);
+      // console.log("📤 Verify Payment Payload:", verifyPayload);
 
       const response = await verifyPaymentApi(verifyPayload);
 
-      console.log("✅ Payment Verified:", response.data);
+      // console.log("✅ Payment Verified:", response.data);
 
       if (response.data.success) {
         toast.success("Payment successful! Booking confirmed.");
@@ -381,7 +381,7 @@ const Payment = () => {
           amount: orderSummary.totalAmount,
         };
 
-        console.log("📤 COD Buy Now Payload:", buyNowPayload);
+        // console.log("📤 COD Buy Now Payload:", buyNowPayload);
         response = await buyNowApi(buyNowPayload);
       }
       // CART BOOKING
@@ -393,11 +393,11 @@ const Payment = () => {
           amount: orderSummary.totalAmount,
         };
 
-        console.log("📤 COD Cart Booking Payload:", cartPayload);
+        // console.log("📤 COD Cart Booking Payload:", cartPayload);
         response = await cartBookingApi(cartPayload);
       }
 
-      console.log("✅ COD Booking Response:", response.data);
+      // console.log("✅ COD Booking Response:", response.data);
 
       if (response.data.success) {
         toast.success("Booking confirmed! Pay on delivery.");

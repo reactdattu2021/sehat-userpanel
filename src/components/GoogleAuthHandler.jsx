@@ -22,7 +22,7 @@ const GoogleAuthHandler = ({ children }) => {
 
         // If we have token and userId, it's a Google OAuth callback
         if (token && userId) {
-            console.log('🔐 Processing Google OAuth callback...');
+            // console.log('🔐 Processing Google OAuth callback...');
             setIsProcessing(true);
 
             // Prepare user data
@@ -36,7 +36,7 @@ const GoogleAuthHandler = ({ children }) => {
             // Save authentication data
             handleGoogleCallback(token, userData);
 
-            console.log('✅ Google login successful!', userData);
+            // console.log('✅ Google login successful!', userData);
 
             // Clean up URL parameters after a short delay
             setTimeout(() => {

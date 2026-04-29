@@ -39,9 +39,9 @@ const Footer = () => {
 
   // Log state changes for debugging
   useEffect(() => {
-    console.log("Footer State - Equipments:", equipments);
-    console.log("Footer State - Nurses:", nurses);
-    console.log("Footer State - Loading:", loading);
+    // console.log("Footer State - Equipments:", equipments);
+    // console.log("Footer State - Nurses:", nurses);
+    // console.log("Footer State - Loading:", loading);
   }, [equipments, nurses, loading]);
 
   const handleEquipmentClick = (equipmentId) => {

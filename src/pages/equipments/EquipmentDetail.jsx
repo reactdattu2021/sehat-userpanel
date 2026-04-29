@@ -35,9 +35,9 @@ const EquipmentDetail = () => {
     const fetchEquipmentDetails = async () => {
       try {
         setLoading(true);
-        console.log("Fetching equipment with ID:", equipmentId);
+        // console.log("Fetching equipment with ID:", equipmentId);
         const response = await getEquipmentByIdApi(equipmentId);
-        console.log("API Response:", response.data);
+        // console.log("API Response:", response.data);
 
         if (response.data.success) {
           const equipmentData = response.data.data;

@@ -111,8 +111,8 @@ export const getEquipmentFiltersApi = (filters = {}) => {
   if (filters.rentalDuration) params.rentalDuration = filters.rentalDuration;
   if (filters.priceRange) params.priceRange = filters.priceRange;
 
-  console.log("🌐 API Call - Equipment Filters:", params);
-  console.log("📍 Full URL:", "/user/equipmentfilters");
+  // console.log("🌐 API Call - Equipment Filters:", params);
+  // console.log("📍 Full URL:", "/user/equipmentfilters");
 
   return axiosInstance.get("/user/equipmentfilters", { params });
 };
@@ -148,8 +148,8 @@ export const getNurseFiltersApi = (filters = {}) => {
   if (filters.experience) params.experience = filters.experience;
   if (filters.gender) params.gender = filters.gender;
 
-  console.log("🌐 getNurseFiltersApi - Sending params:", params);
-  console.log("📍 API Endpoint: /user/servicefilters");
+  // console.log("🌐 getNurseFiltersApi - Sending params:", params);
+  // console.log("📍 API Endpoint: /user/servicefilters");
 
   return axiosInstance.get("/user/servicefilters", { params });
 };

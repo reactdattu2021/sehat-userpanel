@@ -127,7 +127,7 @@ const Equipment = () => {
 
       // Priority 1: Check if there's a global search query from header
       if (searchQuery) {
-        console.log('🔍 Global search query detected:', searchQuery);
+        // console.log('🔍 Global search query detected:', searchQuery);
         response = await globalSearchApi(searchQuery, page, fetchLimit);
 
         if (response.data.success) {
@@ -135,7 +135,7 @@ const Equipment = () => {
           const equipmentResults = response.data.data.filter(
             item => item.resultType === 'equipment'
           );
-          console.log(`✅ Global search found ${equipmentResults.length} equipment results`);
+          // console.log(`✅ Global search found ${equipmentResults.length} equipment results`);
 
           // Fetch full details with pricing for each equipment
           const equipmentsWithPricing = await Promise.all(
@@ -166,17 +166,17 @@ const Equipment = () => {
           limit: fetchLimit
         };
 
-        console.log('🔍 Sending filters to backend:', filterPayload);
+        // console.log('🔍 Sending filters to backend:', filterPayload);
         response = await getEquipmentFiltersApi(filterPayload);
 
         if (response.data.success) {
-          console.log('✅ Filter API Response:', response.data);
+          // console.log('✅ Filter API Response:', response.data);
           processUniqueEquipments(response.data.data);
         }
       }
       // Priority 3: Default - fetch all equipment
       else {
-        console.log('📋 Fetching all equipment (no search/filters)');
+        // console.log('📋 Fetching all equipment (no search/filters)');
         response = await getAllEquipmentsApi(page, fetchLimit);
 
         if (response.data.success) {
@@ -215,7 +215,7 @@ const Equipment = () => {
   const handleSearch = () => {
     // Clear global search from URL when using local filters
     if (searchQuery) {
-      console.log('🔄 Clearing global search, switching to local filters');
+      // console.log('🔄 Clearing global search, switching to local filters');
       navigate('/equipments', { replace: true });
     }
 

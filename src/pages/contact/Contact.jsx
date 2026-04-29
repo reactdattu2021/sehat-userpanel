@@ -29,7 +29,7 @@ const Contact = () => {
   // Fetch all services on mount (only once)
   useEffect(() => {
     if (!hasFetchedDropdownData.current) {
-      console.log("📥 Fetching all services for contact form...");
+      // console.log("📥 Fetching all services for contact form...");
       hasFetchedDropdownData.current = true;
       fetchAllServices();
     }
@@ -39,18 +39,18 @@ const Contact = () => {
   const fetchAllServices = async () => {
     try {
       setLoadingServices(true);
-      console.log("🌐 Calling getAllNursesApi to fetch all services...");
+      // console.log("🌐 Calling getAllNursesApi to fetch all services...");
       // Fetch with a large limit to get all services
       const response = await getAllNursesApi(1, 100);
       if (response.data.success) {
         const services = response.data.data;
-        console.log("✅ All services fetched successfully:", services.length);
+        // console.log("✅ All services fetched successfully:", services.length);
 
         // Extract unique subcategories
         const uniqueSubCategories = [
           ...new Set(services.map((service) => service.subCategory)),
         ];
-        console.log("✅ Unique subcategories extracted:", uniqueSubCategories);
+        // console.log("✅ Unique subcategories extracted:", uniqueSubCategories);
 
         setAllServices(uniqueSubCategories);
       }
@@ -127,7 +127,7 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      console.log("📤 Submitting contact form:", formData);
+      // console.log("📤 Submitting contact form:", formData);
 
       const response = await contactUsApi({
         name: formData.name,
@@ -138,7 +138,7 @@ const Contact = () => {
       });
 
       if (response.data.success) {
-        console.log("✅ Contact form submitted successfully");
+        // console.log("✅ Contact form submitted successfully");
         toast.success(
           "Your message has been sent successfully! We'll get back to you soon.",
         );

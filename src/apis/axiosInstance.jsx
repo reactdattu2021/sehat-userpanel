@@ -54,13 +54,13 @@ axiosInstance.interceptors.response.use(
             const wasLoggedIn = localStorage.getItem('authToken');
 
             if (wasLoggedIn) {
-                console.log('🔒 Session expired - redirecting to login');
+                // console.log('🔒 Session expired - redirecting to login');
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userData');
                 window.location.href = '/';
             } else {
                 // User wasn't logged in - just log the 401 and let the component handle it
-                console.log('⚠️ 401 error on unauthenticated request - component will handle');
+                // console.log('⚠️ 401 error on unauthenticated request - component will handle');
             }
         }
         return Promise.reject(error);
